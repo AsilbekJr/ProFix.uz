@@ -131,7 +131,6 @@ export const rateSpecialist = async (req: Request, res: Response): Promise<any> 
   }
 };
 
-import { uploadToCloud } from '../config/cloudinary';
 
 export const applyAsSpecialist = async (req: Request, res: Response): Promise<any> => {
   try {
