@@ -2,8 +2,7 @@
   "name": "mahalla_service",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "type": "module",
+  "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
     "build": "npx tsc",
