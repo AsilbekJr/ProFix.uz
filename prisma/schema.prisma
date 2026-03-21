@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String      @id @default(uuid())
+  telegramId     String?     @unique
+  phone          String?     @unique
+  name           String?
+  role           Role        @default(CLIENT)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  password       String?
+  ordersAsClient Order[]     @relation("ClientOrders")
+  reviewsGiven   Review[]    @relation("ClientReviews")
+  specialist     Specialist?
+}
+
+model Specialist {
+  id                 String                   @id @default(uuid())
+  userId             String                   @unique
+  rating             Float                    @default(0)
+  documents          String[]
+  isVerified         Boolean                  @default(false)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  bio                String?
+  location           String?
+  locationLat        Float?
+  locationLng        Float?
+  passportData       String?
+  reviewCount        Int                      @default(0)
+  ordersAsSpecialist Order[]                  @relation("SpecialistOrders")
+  portfolios         Portfolio[]
+  reviews            Review[]                 @relation("SpecialistReviews")
+  services           Service[]
+  user               User                     @relation(fields: [userId], references: [id])
+  availabilities     SpecialistAvailability[]
+}
+
+model Portfolio {
+  id           String     @id @default(uuid())
+  specialistId String
+  title        String
+  description  String?
+  beforeImage  String?
+  afterImage   String
+  createdAt    DateTime   @default(now())
+  specialist   Specialist @relation(fields: [specialistId], references: [id])
+}
+
+model Category {
+  id            String     @id @default(uuid())
+  name          String
+  parentId      String?
+  icon          String?
+  parent        Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  subCategories Category[] @relation("SubCategories")
+  orders        Order[]
+  services      Service[]
+}
+
+model Service {
+  id           String     @id @default(uuid())
+  specialistId String
+  categoryId   String
+  price        Float?
+  category     Category   @relation(fields: [categoryId], references: [id])
+  specialist   Specialist @relation(fields: [specialistId], references: [id])
+
+  @@unique([specialistId, categoryId])
+}
+
+model Order {
+  id             String      @id @default(uuid())
+  clientId       String
+  specialistId   String?
+  categoryId     String
+  description    String
+  photos         String[]
+  address        String?
+  locationLat    Float?
+  locationLng    Float?
+  status         OrderStatus @default(PENDING)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  secondaryPhone String?
+  category       Category    @relation(fields: [categoryId], references: [id])
+  client         User        @relation("ClientOrders", fields: [clientId], references: [id])
+  specialist     Specialist? @relation("SpecialistOrders", fields: [specialistId], references: [id])
+  payment        Payment?
+  review         Review?
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String        @unique
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  provider      String?
+  transactionId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  order         Order         @relation(fields: [orderId], references: [id])
+}
+
+model Review {
+  id           String     @id @default(uuid())
+  orderId      String     @unique
+  clientId     String
+  specialistId String
+  rating       Int
+  comment      String?
+  createdAt    DateTime   @default(now())
+  client       User       @relation("ClientReviews", fields: [clientId], references: [id])
+  order        Order      @relation(fields: [orderId], references: [id])
+  specialist   Specialist @relation("SpecialistReviews", fields: [specialistId], references: [id])
+}
+
+model SpecialistAvailability {
+  id           String     @id @default(uuid())
+  specialistId String
+  date         DateTime   @db.Date
+  startTime    String
+  endTime      String
+  isBooked     Boolean    @default(false)
+  specialist   Specialist @relation(fields: [specialistId], references: [id])
+}
+
+enum Role {
+  CLIENT
+  SPECIALIST
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  HELD_IN_ESCROW
+  RELEASED
+  REFUNDED
+}
