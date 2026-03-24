@@ -22,7 +22,7 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 // ── Socket.io ────────────────────────────────────────────────────────────────
 const io = new Server(httpServer, {
-  cors: { origin: process.env.CLIENT_URL || '*' },
+  cors: { origin: true, credentials: true },
   // Production da ping interval optimizatsiyasi
   pingTimeout: 20000,
   pingInterval: 25000,
@@ -51,7 +51,7 @@ app.use((req: any, _res: Response, next: NextFunction) => {
 });
 
 // ── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
