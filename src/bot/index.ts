@@ -22,7 +22,7 @@ export const setupBot = () => {
     ctx.reply(
       `Assalomu alaykum, ${ctx.from.first_name}! 👋\n\nMen **ProFix.uz** aqlli yordamchisiman. Sizga qanday usta kerakligini ayting yoki buzilgan narsangizning rasmini jo'nating. Men o'zim sizga eng zo'r ustani topib beraman! 🤖🛠️`,
       Markup.inlineKeyboard([
-        Markup.button.webApp("Ilovani ochish 📱", TWA_URL)
+        Markup.button.url("Ilovani ochish 📱", TWA_URL)
       ])
     );
   });
@@ -107,11 +107,11 @@ export const setupBot = () => {
         // Button that opens the specific specialist profile in the Web App
         // Telegram Web App URLs can pass startapp parameter
         // Example: https://t.me/pro_fix_uz_bot/app?startapp=specialist_12345
-        buttons.push([Markup.button.webApp(`👨‍🔧 ${sp.user.name} ga buyurtma`, `${TWA_URL}?startapp=specialist_${sp.id}`)]);
+        buttons.push([Markup.button.url(`👨‍🔧 ${sp.user.name} ga buyurtma`, `${TWA_URL}?startapp=specialist_${sp.id}`)]);
       });
     } else {
       replyText += `\nHozircha ushbu toifada bo'sh ustalar yo'q. Boshqalarni ko'rish uchun ilovaga kiring.`;
-      buttons.push([Markup.button.webApp("Barcha ustalar 👨‍🔧", TWA_URL)]);
+      buttons.push([Markup.button.url("Barcha ustalar 👨‍🔧", TWA_URL)]);
     }
 
     await ctx.telegram.editMessageText(ctx.chat.id, waitMsgId, undefined, replyText, {
