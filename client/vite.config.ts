@@ -19,7 +19,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['lucide-react', 'shadcn', 'clsx', 'tailwind-merge'],
+          'ui-vendor': ['lucide-react', 'clsx', 'tailwind-merge'],
           'store-vendor': ['@reduxjs/toolkit', 'react-redux'],
         }
       }
