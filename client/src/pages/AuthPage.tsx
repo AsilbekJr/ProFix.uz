@@ -125,18 +125,31 @@ export default function AuthPage() {
 
         {/* Brand Header */}
         <div className="page-enter" style={{ textAlign: 'center', marginBottom: 40 }}>
-          <img 
-            src="/logo.png" 
-            alt="ProFix Logo" 
-            style={{ 
-              width: 90, 
-              height: 90, 
-              margin: '0 auto 16px', 
-              objectFit: 'contain',
-              filter: theme === 'dark' ? 'drop-shadow(0 8px 16px rgba(59, 130, 246, 0.4))' : 'drop-shadow(0 8px 16px rgba(59, 130, 246, 0.2))',
-              transition: 'all 0.3s ease'
-            }} 
-          />
+          <div style={{ position: 'relative', width: 90, height: 90, margin: '0 auto 16px' }}>
+            <div style={{
+              position: 'absolute', inset: 0,
+              borderRadius: 24,
+              background: 'var(--gradient-brand)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: theme === 'dark' ? '0 12px 40px rgba(59, 130, 246, 0.3)' : '0 12px 40px rgba(59, 130, 246, 0.2)',
+              fontSize: 36, color: 'white', zIndex: 1
+            }}>
+              🛠️
+            </div>
+            <img 
+              src="/logo.png" 
+              alt="ProFix Logo" 
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              style={{ 
+                position: 'absolute', inset: 0,
+                width: '100%', height: '100%', 
+                objectFit: 'contain',
+                filter: theme === 'dark' ? 'drop-shadow(0 8px 16px rgba(59, 130, 246, 0.4))' : 'drop-shadow(0 8px 16px rgba(59, 130, 246, 0.2))',
+                transition: 'all 0.3s ease',
+                zIndex: 2
+              }} 
+            />
+          </div>
           <h1 style={{
             fontFamily: 'Poppins, sans-serif', fontSize: 32, fontWeight: 800,
             color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 8,
