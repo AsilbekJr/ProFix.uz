@@ -125,18 +125,22 @@ export default function AuthPage() {
 
         {/* Brand Header */}
         <div className="page-enter" style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 22, margin: '0 auto 20px',
-            background: 'var(--gradient-brand)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 12px 40px var(--primary-glow)',
-            fontSize: 32,
-          }}>
-            🏠
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="ProFix Logo" 
+            style={{ 
+              width: 90, 
+              height: 90, 
+              margin: '0 auto 16px', 
+              objectFit: 'contain',
+              filter: theme === 'dark' ? 'drop-shadow(0 8px 16px rgba(59, 130, 246, 0.4))' : 'drop-shadow(0 8px 16px rgba(59, 130, 246, 0.2))',
+              transition: 'all 0.3s ease'
+            }} 
+          />
           <h1 style={{
-            fontFamily: 'Poppins, sans-serif', fontSize: 28, fontWeight: 800,
-            color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 8
+            fontFamily: 'Poppins, sans-serif', fontSize: 32, fontWeight: 800,
+            color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 8,
+            transition: 'color 0.3s ease'
           }}>
             Pro<span style={{ color: 'var(--primary)' }}>Fix</span>.uz
           </h1>
