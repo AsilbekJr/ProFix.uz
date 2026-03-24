@@ -8,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-export const uploadToCloud = (buffer: Buffer, folder: string = 'mahalla_service'): Promise<any> => {
+export const uploadToCloud = (buffer: Buffer, folder: string = 'profix'): Promise<any> => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder, resource_type: 'image' },

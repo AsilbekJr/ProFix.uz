@@ -4,8 +4,9 @@ import { useDispatch } from 'react-redux';
 import { setCredentials } from '../store/authSlice';
 import { useLoginMutation, useRegisterOrLoginMutation, useTelegramAuthMutation } from '../store/apiSlice';
 import toast from 'react-hot-toast';
-import { ArrowRight, Loader2, Phone, Lock, User, Smartphone, Eye, EyeOff, Info, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Loader2, Phone, Lock, User, Smartphone, Eye, EyeOff, Info, CheckCircle2, Sun, Moon } from 'lucide-react';
 import { formatPhone } from '../lib/utils';
+import { useTheme } from '../context/ThemeContext';
 
 const tg = (window as any).Telegram?.WebApp;
 
@@ -25,6 +26,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { theme, toggleTheme } = useTheme();
 
   const [login, { isLoading: isLoginLoading }] = useLoginMutation();
   const [register, { isLoading: isRegisterLoading }] = useRegisterOrLoginMutation();
@@ -97,6 +99,30 @@ export default function AuthPage() {
 
       <div style={{ position: 'relative', zIndex: 1, padding: '0 20px', paddingTop: 60, paddingBottom: 48 }}>
         
+        {/* Toggle Theme */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            position: 'absolute',
+            top: 20,
+            right: 20,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text)',
+            cursor: 'pointer',
+            boxShadow: 'var(--shadow-card)',
+            zIndex: 10
+          }}
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
         {/* Brand Header */}
         <div className="page-enter" style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
@@ -112,7 +138,7 @@ export default function AuthPage() {
             fontFamily: 'Poppins, sans-serif', fontSize: 28, fontWeight: 800,
             color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 8
           }}>
-            Mahalla<span style={{ color: 'var(--primary)' }}>Servis</span>
+            Pro<span style={{ color: 'var(--primary)' }}>Fix</span>.uz
           </h1>
           <p style={{ color: 'var(--text-sub)', fontSize: 14, lineHeight: 1.5 }}>
             Atrofingizda ishonchli ustalar tarmog'i

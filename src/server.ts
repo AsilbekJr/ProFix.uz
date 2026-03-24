@@ -69,7 +69,7 @@ connectDB();
 app.get('/api', (_req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'Mahalla-Servis API ishlamoqda 🚀',
+    message: 'ProFix.uz API ishlamoqda 🚀',
     version: '1.0.0',
   });
 });
