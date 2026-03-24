@@ -13,5 +13,16 @@ export default defineConfig({
       '/api': 'http://localhost:5000',
       '/socket.io': { target: 'http://localhost:5000', ws: true }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['lucide-react', 'shadcn', 'clsx', 'tailwind-merge'],
+          'store-vendor': ['@reduxjs/toolkit', 'react-redux'],
+        }
+      }
+    }
   }
 })

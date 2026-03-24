@@ -1,209 +1,252 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useGetAllOrdersQuery, useGetAllSpecialistsQuery, useGetUsersQuery } from '@/store/adminApiSlice';
+import { useGetAllOrdersQuery, useGetAllSpecialistsQuery, useGetUsersQuery, useGetCategoriesQuery } from '@/store/adminApiSlice';
 import { useRouter } from 'next/navigation';
 import { 
-  Users, ClipboardList, Hourglass, CheckCircle2, 
-  Wrench, TrendingUp, Calendar,
-  ShieldCheck, AlertCircle
+  Users, ClipboardList, CheckCircle, 
+  Wrench, Activity, Clock, ChevronRight, ArrowUpRight,
+  ShieldCheck, ShieldAlert
 } from 'lucide-react';
+import Link from 'next/link';
 
-
-interface StatCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  sub?: string;
-  trend?: string;
-  color: string;
-}
-
-function StatCard({ icon, label, value, sub, trend, color }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, sub, color }: {
+  icon: any; label: string; value: string | number; sub?: string; color: string;
+}) {
   return (
-    <div className="stat-card">
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div style={{
-          background: `${color}15`,
-          padding: '12px',
-          borderRadius: '14px',
-          color: color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          {icon}
-        </div>
-        {trend && (
-           <div style={{ 
-             display: 'flex', alignItems: 'center', gap: '4px', 
-             color: 'var(--success)', fontSize: '12px', fontWeight: 700,
-             background: 'rgba(52,197,158,0.1)', padding: '4px 8px', borderRadius: '20px' 
-           }}>
-             <TrendingUp size={12} /> {trend}
-           </div>
-        )}
+    <div style={{
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: 20,
+      padding: '24px',
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+      transition: 'box-shadow 0.2s',
+    }}>
+      <div style={{ 
+        position: 'absolute', right: -12, bottom: -12, 
+        opacity: 0.06, color 
+      }}>
+        <Icon size={100} />
       </div>
-      <div>
-        <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          {label}
-        </p>
-        <p style={{ fontSize: '28px', fontWeight: 800 }}>{value}</p>
-        {sub && <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {sub.includes('Tasdiq') ? <AlertCircle size={12} color="var(--warning)" /> : <ShieldCheck size={12} color="var(--success)" />} {sub}
-        </p>}
+      <p style={{ 
+        fontSize: 11, fontWeight: 900, 
+        color: 'var(--text-muted)', 
+        textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 
+      }}>
+        {label}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+        <h3 style={{ fontSize: 36, fontWeight: 900, color, lineHeight: 1 }}>{value}</h3>
+        {sub && (
+          <span style={{ 
+            marginBottom: 4, fontSize: 12, fontWeight: 700, color: 'var(--success)',
+            background: 'rgba(52,197,158,0.12)', padding: '3px 8px', borderRadius: 8,
+            display: 'flex', alignItems: 'center', gap: 2
+          }}>
+            <ArrowUpRight size={12} /> {sub}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
 export default function DashboardPage() {
-  const { data: ordersRes } = useGetAllOrdersQuery({});
+  const { data: ordersRes, isLoading: isOrdersLoading } = useGetAllOrdersQuery({});
   const { data: usersRes } = useGetUsersQuery({});
-  const { data: specialistsRes } = useGetAllSpecialistsQuery();
-  const [mounted, setMounted] = useState(false);
+  const { data: specialistsRes, isLoading: isSpecialistsLoading } = useGetAllSpecialistsQuery();
+  const { data: categoriesRes } = useGetCategoriesQuery();
   const router = useRouter();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const orders = ordersRes?.data || [];
-
   const users = usersRes?.data || [];
   const specialists = specialistsRes?.data || [];
+  const categories = categoriesRes?.data || [];
 
-  const pendingOrders = orders.filter((o: any) => o.status === 'PENDING').length;
-  const completedOrders = orders.filter((o: any) => o.status === 'COMPLETED').length;
-  const pendingSpecialists = specialists.filter((s: any) => !s.isVerified).length;
+  const verifiedSpecialistsCount = specialists.filter((s: any) => s.isVerified).length;
+  const recentOrders = orders.slice(0, 6);
+  const pendingSpecialists = specialists.filter((s: any) => !s.isVerified);
+
+  const STATUS_LABEL: Record<string, string> = {
+    PENDING: 'Kutilayotgan',
+    ACCEPTED: 'Qabul qilindi',
+    IN_PROGRESS: 'Jarayonda',
+    COMPLETED: 'Bajarilgan',
+    CANCELLED: 'Bekor qilindi',
+  };
+  const STATUS_COLOR: Record<string, string> = {
+    PENDING: 'rgba(245,166,35,0.15)',
+    ACCEPTED: 'rgba(52,197,158,0.15)',
+    IN_PROGRESS: 'rgba(108,99,255,0.15)',
+    COMPLETED: 'rgba(52,197,158,0.15)',
+    CANCELLED: 'rgba(239,68,68,0.15)',
+  };
+  const STATUS_TEXT: Record<string, string> = {
+    PENDING: 'var(--warning)',
+    ACCEPTED: 'var(--success)',
+    IN_PROGRESS: 'var(--primary)',
+    COMPLETED: 'var(--success)',
+    CANCELLED: 'var(--danger)',
+  };
 
   return (
-    <div className="page-enter" style={{ paddingBottom: '40px' }}>
+    <div style={{ paddingBottom: 60 }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
-        <div>
-          <h1 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', marginBottom: '8px' }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-            <Calendar size={16} color="var(--primary)" /> 
-            {mounted ? new Date().toLocaleDateString('uz-UZ', { 
-              day: '2-digit', 
-              month: '2-digit', 
-              year: 'numeric' 
-            }).replace(/\//g, '.') : '...'}
-          </p>
-        </div>
-        <button className="btn btn-ghost" onClick={() => router.push('/dashboard/orders')} style={{ 
-          gap: '10px', 
-          padding: '12px 20px', 
-          borderRadius: '14px', 
-          background: 'var(--bg-card)', 
-          border: '1px solid var(--border)',
-          color: 'var(--text)',
-          fontWeight: 700,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-        }}>
-           <ClipboardList size={18} color="var(--primary)" /> Buyurtmalarni ko'rish
-        </button>
+      <div style={{ marginBottom: 36 }}>
+        <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--text)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+          👋 Xush kelibsiz, Admin
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 500 }}>
+          ProFix xizmatlar platformasining asosiy ko'rsatkichlari
+        </p>
       </div>
-
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-        <StatCard icon={<Users size={24} />} label="Foydalanuvchilar" value={users.length} trend="+12%" color="#6C63FF" />
-        <StatCard icon={<ClipboardList size={24} />} label="Buyurtmalar" value={orders.length} trend="+5%" color="#34C59E" />
-        <StatCard icon={<Hourglass size={24} />} label="Kutayotganlar" value={pendingOrders} sub={`${pendingOrders} ta yangi so'rov`} color="#F5A623" />
-        <StatCard icon={<Wrench size={24} />} label="Ustalar" value={specialists.length} sub={pendingSpecialists > 0 ? `${pendingSpecialists} ta tasdiq kutilmoqda` : 'Barcha ustalar tasdiqlangan'} color="#6C63FF" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 40 }}>
+        <StatCard icon={Users}         label="Foydalanuvchilar"   value={users.length}                 sub="+12%" color="var(--text)" />
+        <StatCard icon={Wrench}        label="Tasdiqlangan Ustalar" value={verifiedSpecialistsCount}   sub={`/ ${specialists.length}`} color="var(--primary)" />
+        <StatCard icon={ClipboardList} label="Jami Buyurtmalar"   value={orders.length}               sub="faol" color="#3B82F6" />
+        <StatCard icon={CheckCircle}   label="Xizmat Kategoriyalari" value={categories.length}        color="var(--success)" />
       </div>
 
-      {/* Main Grid: Recent Activity and Top Categories */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-        
-        {/* Recent Orders Table */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <ClipboardList size={20} color="var(--primary)" />
-              <h2 style={{ fontSize: '16px', fontWeight: 800 }}>So'nggi buyurtmalar</h2>
-            </div>
-            <button
-              style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
-              onClick={() => router.push('/dashboard/orders')}
-            >Barchasini ko'rish</button>
+      {/* Body Grid: Recent Orders + Pending Specialists */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 28, alignItems: 'start' }}>
+
+        {/* Left: Recent Orders */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Activity size={18} color="var(--primary)" /> So'nggi Buyurtmalar
+            </h2>
+            <Link href="/dashboard/orders" style={{ 
+              fontSize: 13, fontWeight: 700, color: 'var(--primary)', 
+              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2
+            }}>
+              Barchasi <ChevronRight size={14} />
+            </Link>
           </div>
-          
-          <div className="table-responsive">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Mijoz</th>
-                  <th>Xizmat</th>
-                  <th>Status</th>
-                  <th>Sana</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.slice(0, 6).map((order: any) => (
-                  <tr key={order.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--bg-card2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>
-                          {order.client?.name?.[0] || 'U'}
-                        </div>
-                        <span style={{ fontWeight: 600 }}>{order.client?.name || '—'}</span>
-                      </div>
-                    </td>
-                    <td style={{ color: 'var(--text-muted)' }}>{order.category?.name || '—'}</td>
-                    <td>
-                      <span className={`badge badge-${order.status.toLowerCase()}`}>
-                        {order.status === 'PENDING' ? 'Kutilmoqda'
-                          : order.status === 'ACCEPTED' ? 'Qabul qilindi'
-                          : order.status === 'IN_PROGRESS' ? 'Jarayonda'
-                          : order.status === 'COMPLETED' ? 'Tugallandi'
-                          : order.status === 'CANCELLED' ? 'Bekor qilindi'
-                          : order.status}
-                      </span>
-                    </td>
-                    <td style={{ color: 'var(--text-faint)', fontSize: '12px' }}>
-                      {new Date(order.createdAt).toLocaleDateString('uz')}
-                    </td>
-                  </tr>
-                ))}
-                {orders.length === 0 && (
-                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Ma'lumot topilmadi</td></tr>
-                )}
-              </tbody>
-            </table>
+
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
+            {isOrdersLoading ? (
+              <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Clock size={28} style={{ margin: '0 auto 12px', display: 'block', animation: 'spin 1s linear infinite' }} />
+                Yuklanmoqda...
+              </div>
+            ) : recentOrders.length === 0 ? (
+              <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>
+                <ClipboardList size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.2 }} />
+                <p>Hozircha buyurtmalar yo'q</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-card2)', borderBottom: '1px solid var(--border)' }}>
+                      {['Mijoz', 'Xizmat', 'Status', 'Sana'].map(h => (
+                        <th key={h} style={{ padding: '14px 18px', textAlign: 'left', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentOrders.map((order: any) => (
+                      <tr key={order.id} style={{ borderBottom: '1px solid var(--border)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-card2)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--text)', fontSize: 14 }}>
+                          {order.client?.name || 'Ismsiz'}
+                        </td>
+                        <td style={{ padding: '14px 18px', fontWeight: 600, color: 'var(--primary)', fontSize: 14 }}>
+                          {order.category?.name || 'Noma\'lum'}
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: 20,
+                            fontSize: 11,
+                            fontWeight: 800,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            background: STATUS_COLOR[order.status] || 'var(--bg-card2)',
+                            color: STATUS_TEXT[order.status] || 'var(--text-muted)',
+                          }}>
+                            {STATUS_LABEL[order.status] || order.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 18px', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>
+                          {new Date(order.createdAt).toLocaleDateString('uz')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* System Health / Quick Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '16px' }}>Tizim xolati</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                 {[
-                   { label: 'API Server', status: 'Online', color: 'var(--success)' },
-                   { label: 'Ma\'lumotlar bazasi', status: 'Online', color: 'var(--success)' },
-                   { label: 'Media Storage', status: 'Stable', color: 'var(--success)' },
-                 ].map((item, i) => (
-                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--bg-card2)', borderRadius: '12px' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{item.label}</span>
-                      <span style={{ fontSize: '12px', fontWeight: 800, color: item.color, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.color }}></div> {item.status}
-                      </span>
-                   </div>
-                 ))}
+        {/* Right: Pending Specialists */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldAlert size={18} color="var(--warning)" /> Tasdiq kutayotganlar
+            </h2>
+          </div>
+
+          <div style={{ background: 'var(--bg-card)', border: '1px solid rgba(245,166,35,0.25)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
+            {isSpecialistsLoading ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Yuklanmoqda...</div>
+            ) : pendingSpecialists.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <ShieldCheck size={36} style={{ opacity: 0.25, color: 'var(--success)' }} />
+                <p style={{ fontSize: 13, fontWeight: 600 }}>Tasdiq kutayotgan ustalar yo'q</p>
               </div>
-           </div>
-           
-           <div style={{ background: 'var(--primary)', border: 'none', borderRadius: '20px', padding: '24px', color: '#fff' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px' }}>Yordam kerakmi?</h3>
-              <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px', lineHeight: '1.4' }}>
-                Agar tizimda xatolik topsangiz yoki texnik yordam kerak bo'lsa, ishlab chiquvchilar bilan bog'laning.
-              </p>
-              <button style={{ width: '100%', padding: '10px', borderRadius: '10px', border: 'none', background: '#fff', color: 'var(--primary)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
-                Bog'lanish
-              </button>
-           </div>
+            ) : (
+              <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {pendingSpecialists.map((s: any) => (
+                  <div key={s.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 14px', background: 'var(--bg-card2)', borderRadius: 14,
+                    border: '1px solid var(--border)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 38, height: 38, borderRadius: '50%',
+                        background: 'rgba(245,166,35,0.12)', color: 'var(--warning)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 800, fontSize: 15
+                      }}>
+                        {s.user?.name?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: 800, fontSize: 13, color: 'var(--text)' }}>{s.user?.name || 'Ismsiz'}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{s.user?.phone || 'Tel yo\'q'}</p>
+                      </div>
+                    </div>
+                    <Link href="/dashboard/specialists" style={{
+                      padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 800,
+                      color: 'var(--text)', textDecoration: 'none',
+                      background: 'var(--bg-card)', border: '1px solid var(--border)'
+                    }}>
+                      Ko'rish
+                    </Link>
+                  </div>
+                ))}
+                {pendingSpecialists.length > 0 && (
+                  <Link href="/dashboard/specialists" style={{
+                    display: 'block', textAlign: 'center',
+                    padding: '12px', marginTop: 4,
+                    fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'none'
+                  }}>
+                    Barchasini ko'rish ({pendingSpecialists.length})
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

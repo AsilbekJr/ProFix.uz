@@ -139,11 +139,12 @@ export default function Sidebar() {
 
         <button
           onClick={handleLogout}
-          className="btn btn-danger"
           style={{ 
             width: '100%', padding: '14px', borderRadius: '18px', 
-            gap: '10px', fontSize: '14px', fontWeight: 800,
-            background: 'var(--danger)', border: 'none', boxShadow: '0 10px 20px rgba(239,68,68,0.2)'
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            fontSize: '14px', fontWeight: 800, cursor: 'pointer',
+            background: 'var(--danger)', color: '#fff',
+            border: 'none', boxShadow: '0 10px 20px rgba(239,68,68,0.2)'
           }}
         >
           <LogOut size={18} /> Chiqish
@@ -155,13 +156,13 @@ export default function Sidebar() {
   return (
     <>
       {/* ── Desktop Sidebar ──────────────────────────────────── */}
-      <aside className="sidebar sidebar-desktop">
+      <aside className="hidden lg:flex flex-col w-[260px] fixed top-0 left-0 h-screen bg-[var(--sidebar)] border-r border-[var(--border)] z-50">
         <SidebarContent />
       </aside>
 
       {/* ── Mobile: Hamburger toggle button ─────────────────── */}
       <button
-        className="sidebar-mobile-toggle"
+        className="lg:hidden fixed top-4 left-4 z-40 bg-[var(--bg-card)] border border-[var(--border)] p-2 rounded-xl text-foreground shadow-sm flex items-center justify-center h-10 w-10"
         onClick={() => setOpen(true)}
         aria-label="Menyuni ochish"
       >
@@ -171,22 +172,16 @@ export default function Sidebar() {
       {/* ── Mobile: Overlay ──────────────────────────────────── */}
       {open && (
         <div
-          className="sidebar-overlay"
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
           onClick={() => setOpen(false)}
         />
       )}
 
       {/* ── Mobile: Sliding Sidebar ──────────────────────────── */}
-      <aside className={`sidebar sidebar-mobile${open ? ' open' : ''}`}>
+      <aside className={`lg:hidden fixed top-0 left-0 h-screen w-[260px] bg-[var(--sidebar)] border-r border-[var(--border)] z-50 transform transition-transform duration-300 ease-in-out shadow-2xl ${open ? 'translate-x-0' : '-translate-x-full'}`}>
         <button
           onClick={() => setOpen(false)}
-          style={{
-            position: 'absolute', top: 16, right: 16,
-            width: 32, height: 32, borderRadius: '8px',
-            background: 'var(--bg-card2)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'var(--text-muted)', zIndex: 1
-          }}
+          className="absolute top-4 right-4 p-2 bg-[var(--bg-card2)] border border-[var(--border)] text-muted-foreground hover:text-foreground rounded-lg transition-colors z-50"
         >
           <X size={16} />
         </button>

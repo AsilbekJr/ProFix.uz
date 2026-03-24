@@ -12,6 +12,10 @@ export const adminApi = createApi({
     },
   }),
   tagTypes: ['User', 'Order', 'Specialist', 'Category', 'Stats'],
+  // Cache data for 5 minutes — avoids re-fetching on every page navigation
+  keepUnusedDataFor: 300,
+  refetchOnFocus: false,
+  refetchOnReconnect: false,
 
   endpoints: (builder) => ({
     // ── DASHBOARD ──────────────────────────────────────────

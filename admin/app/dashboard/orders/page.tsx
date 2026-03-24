@@ -1,47 +1,46 @@
 'use client';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { useGetAllOrdersQuery } from '@/store/adminApiSlice';
+import { useGetAllOrdersQuery, useUpdateOrderStatusMutation, useGetAllSpecialistsQuery } from '@/store/adminApiSlice';
 import type { OrderStatus } from '@/types';
-import { 
-  ClipboardList, Search, Filter, Calendar, 
-  MapPin, User, HardHat, ChevronRight, Download,
-  Phone, AlertCircle, CheckCircle, XCircle, Clock, X, Wrench
-} from 'lucide-react';
-import { useUpdateOrderStatusMutation, useGetAllSpecialistsQuery } from '@/store/adminApiSlice';
+import { ClipboardList, Search, MapPin, Phone, ChevronRight, Clock, X, Wrench, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
-const STATUS_CONFIG: Record<string, { label: string; badge: string; color: string }> = {
-  PENDING:     { label: 'Kutilmoqda',   badge: 'badge-pending',     color: 'var(--warning)' },
-  ACCEPTED:    { label: 'Qabul qilindi', badge: 'badge-accepted',    color: 'var(--success)' },
-  IN_PROGRESS: { label: 'Jarayonda',    badge: 'badge-in_progress', color: 'var(--primary)' },
-  COMPLETED:   { label: 'Bajarildi',   badge: 'badge-completed',   color: 'var(--success)' },
-  CANCELLED:   { label: 'Bekor qilindi', badge: 'badge-cancelled',  color: 'var(--danger)' },
+const STATUS: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING:     { label: 'Kutilmoqda',    bg: 'rgba(245,166,35,0.15)',   color: 'var(--warning)' },
+  ACCEPTED:    { label: 'Qabul qilindi', bg: 'rgba(52,197,158,0.15)',   color: 'var(--success)' },
+  IN_PROGRESS: { label: 'Jarayonda',     bg: 'rgba(108,99,255,0.15)',   color: 'var(--primary)' },
+  COMPLETED:   { label: 'Bajarildi',     bg: 'rgba(52,197,158,0.15)',   color: 'var(--success)' },
+  CANCELLED:   { label: 'Bekor qilindi', bg: 'rgba(239,68,68,0.15)',    color: 'var(--danger)'  },
+};
+
+const S = {
+  page:      { paddingBottom: 60 } as React.CSSProperties,
+  card:      { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: '0 2px 12px rgba(0,0,0,0.12)' } as React.CSSProperties,
+  label:     { fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '1px' },
+  th:        { padding: '14px 18px', textAlign: 'left' as const, fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.8px', whiteSpace: 'nowrap' as const, borderBottom: '1px solid var(--border)', background: 'var(--bg-card2)' },
+  td:        { padding: '14px 18px', fontSize: 14, borderBottom: '1px solid var(--border)', verticalAlign: 'middle' as const, whiteSpace: 'nowrap' as const },
+  input:     { width: '100%', padding: '10px 14px 10px 38px', background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', fontSize: 14, outline: 'none' } as React.CSSProperties,
+  select:    { padding: '10px 14px', background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', fontSize: 14, outline: 'none', appearance: 'none' as const } as React.CSSProperties,
 };
 
 export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm]   = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen]   = useState(false);
 
-  // Prevent background scroll when modal is open
   useEffect(() => {
-    if (isModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    document.body.style.overflow = isModalOpen ? 'hidden' : 'unset';
     return () => { document.body.style.overflow = 'unset'; };
   }, [isModalOpen]);
-  
+
   const { data: ordersRes, isLoading } = useGetAllOrdersQuery({ status: statusFilter || undefined });
-  const { data: specialistsRes } = useGetAllSpecialistsQuery();
+  const { data: specialistsRes }       = useGetAllSpecialistsQuery();
   const [updateStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
-  
-  const allOrders = ordersRes?.data || [];
+
+  const allOrders  = ordersRes?.data || [];
   const specialists = specialistsRes?.data || [];
-  
-  const orders = allOrders.filter((o: any) => 
+  const orders = allOrders.filter((o: any) =>
     o.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.description?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -51,437 +50,295 @@ export default function OrdersPage() {
     try {
       await updateStatus({ orderId, status, specialistId }).unwrap();
       toast.success('Buyurtma holati yangilandi');
-      if (isModalOpen) setIsModalOpen(false);
+      setIsModalOpen(false);
     } catch (err: any) {
       toast.error(err.data?.message || 'Xatolik yuz berdi');
     }
   };
 
-  const openDetails = (order: any) => {
-    setSelectedOrder(order);
-    setIsModalOpen(true);
+  const StatusBadge = ({ status }: { status: string }) => {
+    const cfg = STATUS[status] || { label: status, bg: 'var(--bg-card2)', color: 'var(--text-muted)' };
+    return (
+      <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', background: cfg.bg, color: cfg.color }}>
+        {cfg.label}
+      </span>
+    );
   };
 
   return (
-    <div className="page-enter" style={{ paddingBottom: '40px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <ClipboardList size={32} color="var(--primary)" /> Buyurtmalar Boshqaruvi
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Barcha xizmat so'rovlari va ularning jarayonini nazorat qilish</p>
-        </div>
-        <button 
-          className="btn btn-ghost" 
-          style={{ gap: '8px' }}
-          onClick={() => {
-            const headers = ['ID', 'Mijoz', 'Tel', 'Qo\'shimcha Tel', 'Xizmat', 'Tavsif', 'Manzil', 'Status', 'Sana'];
-            const rows = orders.map(o => [
-              o.id,
-              o.client?.name || '',
-              o.client?.phone || '',
-              o.secondaryPhone || '',
-              o.category?.name || '',
-              o.description || '',
-              o.address || '',
-              o.status,
-              new Date(o.createdAt).toLocaleString()
-            ]);
-            
-            const csvContent = [headers, ...rows].map(e => e.map(v => `"${v}"`).join(",")).join("\n");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `buyurtmalar_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }}
-        >
-           <Download size={18} /> Excel (CSV) ga yuklash
-        </button>
+    <div style={S.page}>
+      {/* ── Header ─────────────────────────────────── */}
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <ClipboardList size={30} color="var(--primary)" /> Buyurtmalar
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Foydalanuvchilar qoldirgan barcha buyurtmalar va joriy statuslar</p>
       </div>
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
-          <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder="Mijoz, xizmat yoki muammo bo'yicha qidirish..." 
+      {/* ── Stats row ──────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {[
+          { label: 'Barchasi',    count: orders.length,                                                     color: 'var(--primary)' },
+          { label: 'Kutilmoqda',  count: orders.filter((o:any) => o.status === 'PENDING').length,            color: 'var(--warning)' },
+          { label: 'Jarayonda',   count: orders.filter((o:any) => o.status === 'IN_PROGRESS').length,        color: '#3B82F6' },
+          { label: 'Tugallangan', count: orders.filter((o:any) => o.status === 'COMPLETED').length,          color: 'var(--success)' },
+        ].map(stat => (
+          <div key={stat.label} style={{ ...S.card, padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p style={S.label}>{stat.label}</p>
+            <p style={{ fontSize: 32, fontWeight: 900, color: stat.color, lineHeight: 1 }}>{stat.count}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Toolbar ────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            placeholder="Buyurtmachini izlash..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%', padding: '12px 16px 12px 48px',
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: '14px', color: 'var(--text)', outline: 'none'
-            }}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={S.input}
           />
         </div>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-            <button 
-              className={`btn ${statusFilter === '' ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setStatusFilter('')}
-            > Barchasi </button>
-            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-              <button 
-                key={key}
-                className={`btn ${statusFilter === key ? 'btn-primary' : 'btn-ghost'}`}
-                style={statusFilter === key ? { background: cfg.color, borderColor: 'transparent' } : {}}
-                onClick={() => setStatusFilter(key as OrderStatus)}
-              >
-                {cfg.label}
-              </button>
-            ))}
-        </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} style={{ ...S.select, minWidth: 180 }}>
+          <option value="">Barcha holatlar</option>
+          <option value="PENDING">Kutilmoqda</option>
+          <option value="ACCEPTED">Qabul qilingan</option>
+          <option value="IN_PROGRESS">Jarayonda</option>
+          <option value="COMPLETED">Tugallangan</option>
+          <option value="CANCELLED">Bekor qilingan</option>
+        </select>
       </div>
 
-      {/* Content Table */}
-      <div style={{ 
-        background: 'var(--bg-card)', border: '1px solid var(--border)', 
-        borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.15)' 
-      }}>
+      {/* ── Table ──────────────────────────────────── */}
+      <div style={{ ...S.card, overflow: 'hidden' }}>
         {isLoading ? (
-          <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>
-             <p>Buyurtmalar yuklanmoqda...</p>
+          <div style={{ padding: 80, textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Clock size={32} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.4 }} />
+            <p>Yuklanmoqda...</p>
+          </div>
+        ) : orders.length === 0 ? (
+          <div style={{ padding: 80, textAlign: 'center', color: 'var(--text-muted)' }}>
+            <ClipboardList size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.2 }} />
+            <p>Buyurtmalar topilmadi</p>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="admin-table">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th>Mijoz</th>
-                  <th>Buyurtma Tafsiloti</th>
-                  <th>Usta</th>
-                  <th>Status</th>
-                  <th>Amal</th>
+                  <th style={S.th}>Mijoz / Telefon</th>
+                  <th style={S.th}>Xizmat va Ta'rif</th>
+                  <th style={S.th}>Manzil</th>
+                  <th style={S.th}>Status & Usta</th>
+                  <th style={{ ...S.th, textAlign: 'right' }}>Amal</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order: import('@/types').Order) => {
-                  const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
-                  return (
-                    <tr key={order.id}>
-                      <td style={{ minWidth: '180px' }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ 
-                              width: 36, height: 36, borderRadius: '50%', 
-                              background: 'var(--bg-card2)', display: 'flex', 
-                              alignItems: 'center', justifyContent: 'center',
-                              fontSize: '12px', fontWeight: 800
-                            }}>
-                              {order.client?.name?.[0] || 'U'}
-                            </div>
-                            <div>
-                               <p style={{ fontWeight: 700, fontSize: '14px' }}>{order.client?.name || 'Ismsiz'}</p>
-                               <p style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{order.client?.phone || 'Tel yo\'q'}</p>
-                            </div>
-                         </div>
-                      </td>
-                      <td>
-                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--primary)' }}>
-                               {order.category?.name}
-                            </div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                               {order.description}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                               <span style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-faint)' }}>
-                                  <MapPin size={10} /> {order.address || 'Manzil yo\'q'}
-                               </span>
-                               <span style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-faint)' }}>
-                                  <Calendar size={10} /> {new Date(order.createdAt).toLocaleDateString('uz')}
-                               </span>
-                            </div>
-                         </div>
-                      </td>
-                      <td>
-                         {order.specialist ? (
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <HardHat size={16} color="var(--success)" />
-                              <span style={{ fontSize: '13px', fontWeight: 600 }}>{order.specialist.user?.name}</span>
-                           </div>
-                         ) : (
-                           <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontStyle: 'italic' }}>Tayinlanmagan</span>
-                         )}
-                      </td>
-                      <td>
-                         <span className={`badge ${cfg.badge}`}>
-                            {cfg.label}
-                         </span>
-                      </td>
-                      <td>
-                         <button 
-                           className="btn btn-ghost" 
-                           style={{ padding: '6px 12px' }}
-                           onClick={() => openDetails(order)}
-                         >
-                            Batafsil <ChevronRight size={14} />
-                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {orders.length === 0 && (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-                    Foydalanuvchilar topilmadi
-                  </td></tr>
-                )}
+                {orders.map((order: any) => (
+                  <tr key={order.id}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-card2)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <td style={S.td}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-card2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, color: 'var(--primary)', flexShrink: 0 }}>
+                          {order.client?.name?.[0]?.toUpperCase() || 'M'}
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{order.client?.name || 'Ismsiz'}</p>
+                          <p style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Phone size={11} /> {order.client?.phone || '—'}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ ...S.td, maxWidth: 240 }}>
+                      <p style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{order.category?.name || 'Noma\'lum xizmat'}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{order.description || 'Izohsiz'}</p>
+                    </td>
+                    <td style={{ ...S.td, maxWidth: 200 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, color: 'var(--text-muted)', fontSize: 13 }}>
+                        <MapPin size={13} style={{ marginTop: 1, flexShrink: 0 }} />
+                        <span style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>{order.address || 'Kiritilmagan'}</span>
+                      </div>
+                    </td>
+                    <td style={S.td}>
+                      <StatusBadge status={order.status} />
+                      {order.specialist && (
+                        <div style={{ marginTop: 5, fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Wrench size={11} color="var(--primary)" />
+                          {order.specialist?.user?.name || 'Usta biriktirilgan'}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ ...S.td, textAlign: 'right' }}>
+                      <button
+                        onClick={() => { setSelectedOrder(order); setIsModalOpen(true); }}
+                        style={{ background: 'rgba(108,99,255,0.1)', color: 'var(--primary)', border: 'none', padding: '7px 14px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' }}
+                        onMouseEnter={e => { (e.currentTarget as any).style.background = 'var(--primary)'; (e.currentTarget as any).style.color = '#fff'; }}
+                        onMouseLeave={e => { (e.currentTarget as any).style.background = 'rgba(108,99,255,0.1)'; (e.currentTarget as any).style.color = 'var(--primary)'; }}
+                      >
+                        Tahrirlash <ChevronRight size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* ── Order Detail Side Drawer (FINAL PRECISE) ────────────────── */}
+      {/* ── Order Detail Drawer ─────────────────────── */}
       {isModalOpen && selectedOrder && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.25)', // Subtle shadow over content
-          backdropFilter: 'blur(4px)',
-          zIndex: 1000, display: 'flex', justifyContent: 'flex-end'
-        }} onClick={() => setIsModalOpen(false)}>
-          <div 
-            style={{
-              background: 'var(--bg-card)', width: '100%', maxWidth: '560px',
-              height: '100vh', boxShadow: '-30px 0 70px rgba(0,0,0,0.2)', 
-              borderLeft: '1px solid var(--border)', display: 'flex', 
-              flexDirection: 'column', overflow: 'hidden',
-              animation: 'drawerSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-            }}
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', justifyContent: 'flex-end' }}
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            style={{ width: '100%', maxWidth: 540, height: '100vh', background: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '-20px 0 60px rgba(0,0,0,0.3)' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Animation support */}
-            <style>{`
-              @keyframes drawerSlideIn {
-                from { transform: translateX(100%); opacity: 0.5; }
-                to { transform: translateX(0); opacity: 1; }
-              }
-            `}</style>
-
-            {/* Top Branding Ribbon */}
-            <div style={{ height: '6px', width: '100%', background: 'linear-gradient(90deg, var(--primary), #8E85FF)' }}></div>
-
-            {/* Header */}
-            <div style={{ 
-              padding: '28px 32px', borderBottom: '1px solid var(--border)', 
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: 'var(--bg-card2)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ 
-                  width: 48, height: 48, borderRadius: '14px', 
-                  background: 'rgba(108,99,255,0.1)', display: 'flex', 
-                  alignItems: 'center', justifyContent: 'center', color: 'var(--primary)'
-                }}>
-                  <ClipboardList size={24} strokeWidth={2.5} />
+            {/* Drawer Header */}
+            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 13, background: 'rgba(108,99,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                  <ClipboardList size={22} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.5px' }}>Buyurtma Tafsiloti</h2>
-                  <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text)' }}>Buyurtma Tafsiloti</h2>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>
                     ID: <span style={{ color: 'var(--primary)' }}>#{selectedOrder.id.slice(-8).toUpperCase()}</span>
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsModalOpen(false)} 
-                style={{ 
-                  background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text)', 
-                  width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}
+              <button
+                onClick={() => setIsModalOpen(false)}
+                style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Scrollable Content Container */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                
-                {/* 1. Status & Timing Section */}
-                <div style={{ 
-                    background: 'var(--bg-card2)', padding: '24px', borderRadius: '28px', 
-                    border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}>
-                    <div>
-                        <p style={{ fontSize: '11px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Hozirgi Holat</p>
-                        <span className={`badge ${STATUS_CONFIG[selectedOrder.status]?.badge}`} style={{ fontSize: '13px', padding: '8px 16px' }}>
-                            {STATUS_CONFIG[selectedOrder.status]?.label}
-                        </span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                         <p style={{ fontSize: '11px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Yuborilgan vaqti</p>
-                         <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>{new Date(selectedOrder.createdAt).toLocaleDateString('uz')} {new Date(selectedOrder.createdAt).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' })}</p>
-                    </div>
-                </div>
+            {/* Drawer Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                {/* 2. Task Details Section */}
+              {/* Status Row */}
+              <div style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <div style={{ width: 4, height: 16, background: 'var(--primary)', borderRadius: '4px' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Xizmat va Tavsif</span>
+                  <p style={{ ...S.label, marginBottom: 8 }}>Hozirgi Holat</p>
+                  <StatusBadge status={selectedOrder.status} />
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ ...S.label, marginBottom: 8 }}>Yuborilgan vaqti</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                    {new Date(selectedOrder.createdAt).toLocaleDateString('uz')} {new Date(selectedOrder.createdAt).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Service Info */}
+              <Section title="Xizmat va Tavsif" color="var(--primary)">
+                <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--primary)', marginBottom: 8 }}>{selectedOrder.category?.name || 'Kategoriya nomi yo\'q'}</p>
+                <p style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>{selectedOrder.description || 'Tavsif berilmagan'}</p>
+              </Section>
+
+              {/* Location */}
+              <Section title="Manzil" color="var(--success)">
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(52,197,158,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)', flexShrink: 0 }}>
+                    <MapPin size={18} />
                   </div>
-                  <div style={{ background: 'var(--bg-card2)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border)' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--primary)', marginBottom: '12px' }}>{selectedOrder.category?.name || 'Kategoriya nomi yo\'q'}</h3>
-                    <p style={{ fontSize: '16px', color: 'var(--text)', lineHeight: 1.7, fontWeight: 500 }}>
-                        {selectedOrder.description || 'Tavsif berilmagan'}
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.5, paddingTop: 8 }}>{selectedOrder.address || 'Aniq manzil ko\'rsatilmagan'}</p>
+                </div>
+              </Section>
+
+              {/* Client Info */}
+              <Section title="Mijoz Ma'lumotlari" color="var(--primary)">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, var(--primary), #8E85FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, fontWeight: 900, flexShrink: 0 }}>
+                    {selectedOrder.client?.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{selectedOrder.client?.name || 'Ismsiz'}</p>
+                    <p style={{ fontSize: 14, color: 'var(--primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <Phone size={13} /> {selectedOrder.client?.phone || '—'}
                     </p>
                   </div>
                 </div>
+              </Section>
 
-                {/* 3. Location Section */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <div style={{ width: 4, height: 16, background: 'var(--success)', borderRadius: '4px' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Manzil ma'lumotlari</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '18px', background: 'var(--bg-card2)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border)' }}>
-                    <div style={{ 
-                        width: 44, height: 44, borderRadius: '12px', background: 'rgba(52,197,158,0.1)', 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)' 
-                    }}>
-                      <MapPin size={22} strokeWidth={2.5} />
-                    </div>
-                    <p style={{ fontSize: '15px', color: 'var(--text)', fontWeight: 700, lineHeight: 1.5 }}>
-                        {selectedOrder.address || 'Aniq manzil ko\'rsatilmagan'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 4. Client Info Section */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <div style={{ width: 4, height: 16, background: 'var(--primary)', borderRadius: '4px' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Mijoz Ma'lumotlari</span>
-                  </div>
-                  <div style={{ 
-                    background: 'var(--bg-card)', padding: '20px', borderRadius: '24px', border: '1px solid var(--border)',
-                    display: 'flex', alignItems: 'center', gap: '18px', boxShadow: '0 8px 20px rgba(0,0,0,0.03)'
-                  }}>
-                    <div style={{ 
-                      width: 56, height: 56, borderRadius: '18px', 
-                      background: 'linear-gradient(135deg, var(--primary), #8E85FF)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      color: '#fff', fontSize: '22px', fontWeight: 900
-                    }}>
-                      {selectedOrder.client?.name?.[0] || 'U'}
-                    </div>
-                    <div>
-                      <h4 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)' }}>{selectedOrder.client?.name || 'Ismsiz'}</h4>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: 700, fontSize: '15px', marginTop: '4px' }}>
-                        <Phone size={14} strokeWidth={3} /> {selectedOrder.client?.phone}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 5. Management Control Section */}
-                <div style={{ 
-                  background: 'var(--bg-card)', padding: '28px', borderRadius: '32px', 
-                  border: '1px solid var(--border)', boxShadow: '0 15px 40px rgba(0,0,0,0.06)' 
-                }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(108,99,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                        <Wrench size={18} strokeWidth={2.5} />
-                    </div>
-                    <span style={{ fontSize: '16px', fontWeight: 900, color: 'var(--text)' }}>Bajaruvchi va Status</span>
-                  </div>
-
-                  {/* Status Selection */}
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px', display: 'block', marginLeft: '4px' }}>Buyurtma holatini yangilash</label>
+              {/* Management */}
+              <Section title="Bajaruvchi va Status" color="var(--primary)">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div>
+                    <label style={{ ...S.label, display: 'block', marginBottom: 8 }}>Buyurtma holatini yangilash</label>
                     <div style={{ position: 'relative' }}>
                       <select
                         disabled={isUpdating}
                         value={selectedOrder.status}
-                        onChange={(e) => handleUpdateStatus(selectedOrder.id, e.target.value)}
-                        style={{
-                          width: '100%', padding: '16px 20px', background: 'var(--bg-card2)',
-                          border: '2px solid var(--border)', borderRadius: '16px', color: 'var(--text)',
-                          fontSize: '14px', fontWeight: 700, outline: 'none', appearance: 'none', transition: 'all 0.2s'
-                        }}
+                        onChange={e => handleUpdateStatus(selectedOrder.id, e.target.value, selectedOrder.specialistId)}
+                        style={{ ...S.select, width: '100%', padding: '12px 16px' }}
                       >
-                        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                          <option key={key} value={key}>{cfg.label}</option>
-                        ))}
+                        {Object.entries(STATUS).map(([key, cfg]) => <option key={key} value={key}>{cfg.label}</option>)}
                       </select>
-                      <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }}>
-                        <ChevronRight size={18} strokeWidth={3} style={{ transform: 'rotate(90deg)' }} />
-                      </div>
                     </div>
                   </div>
-
-                  {/* Specialist Selection */}
                   <div>
-                    <label style={{ fontSize: '11px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px', display: 'block', marginLeft: '4px' }}>Usta tayinlash</label>
-                    <div style={{ position: 'relative' }}>
-                      <select
-                        disabled={isUpdating}
-                        value={selectedOrder.specialistId || ''}
-                        onChange={(e) => handleUpdateStatus(selectedOrder.id, selectedOrder.status, e.target.value)}
-                        style={{
-                          width: '100%', padding: '16px 20px', background: 'var(--bg-card2)',
-                          border: '2px solid var(--border)', borderRadius: '16px', color: 'var(--text)',
-                          fontSize: '14px', fontWeight: 700, outline: 'none', appearance: 'none', transition: 'all 0.2s'
-                        }}
-                      >
-                        <option value="">Tayinlanmagan</option>
-                        {specialists.map((s: any) => (
-                          <option key={s.id} value={s.id}>{s.user?.name} {s.isVerified ? '✓' : ''}</option>
-                        ))}
-                      </select>
-                       <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }}>
-                        <ChevronRight size={18} strokeWidth={3} style={{ transform: 'rotate(90deg)' }} />
-                      </div>
-                    </div>
+                    <label style={{ ...S.label, display: 'block', marginBottom: 8 }}>Usta tayinlash</label>
+                    <select
+                      disabled={isUpdating}
+                      value={selectedOrder.specialistId || ''}
+                      onChange={e => handleUpdateStatus(selectedOrder.id, selectedOrder.status, e.target.value)}
+                      style={{ ...S.select, width: '100%', padding: '12px 16px' }}
+                    >
+                      <option value="">Tayinlanmagan</option>
+                      {specialists.map((s: any) => <option key={s.id} value={s.id}>{s.user?.name} {s.isVerified ? '✓' : ''}</option>)}
+                    </select>
                   </div>
                 </div>
+              </Section>
 
-                {/* 6. Photos Section */}
-                {selectedOrder.photos && selectedOrder.photos.length > 0 && (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-                      <div style={{ width: 4, height: 16, background: 'var(--warning)', borderRadius: '4px' }}></div>
-                      <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Biriktirilgan rasmlar</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                      {selectedOrder.photos.map((url: string, i: number) => (
-                        <div key={i} onClick={() => window.open(url, '_blank')} style={{ 
-                          width: '100px', height: '100px', borderRadius: '20px', overflow: 'hidden', 
-                          border: '2px solid var(--border)', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
-                        }}>
-                          <img src={url} alt="detail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      ))}
-                    </div>
+              {/* Photos */}
+              {selectedOrder.photos?.length > 0 && (
+                <Section title="Biriktirilgan rasmlar" color="var(--warning)">
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    {selectedOrder.photos.map((url: string, i: number) => (
+                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ))}
                   </div>
-                )}
-              </div>
+                </Section>
+              )}
             </div>
 
-            {/* Footer */}
-            <div style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', background: 'var(--bg-card2)' }}>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  style={{ 
-                    width: '100%', borderRadius: '18px', padding: '18px', fontWeight: 900, 
-                    background: 'var(--primary)', border: 'none', color: '#fff', fontSize: '16px',
-                    boxShadow: '0 10px 25px rgba(108,99,255,0.3)', cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                  Oynani Yopish
-                </button>
+            {/* Drawer Footer */}
+            <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)', background: 'var(--bg-card2)', flexShrink: 0 }}>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                style={{ width: '100%', padding: '14px', borderRadius: 16, fontWeight: 900, background: 'var(--primary)', border: 'none', color: '#fff', fontSize: 15, cursor: 'pointer', boxShadow: '0 8px 20px rgba(108,99,255,0.25)' }}
+              >
+                Oynani Yopish
+              </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Section({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <div style={{ width: 3, height: 14, background: color, borderRadius: 4 }} />
+        <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</span>
+      </div>
+      <div style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
+        {children}
+      </div>
     </div>
   );
 }

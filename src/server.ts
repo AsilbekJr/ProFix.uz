@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { connectDB } from './config/db';
@@ -13,6 +14,7 @@ import specialistRoutes from './routes/specialist.routes';
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
 import reviewRoutes from './routes/review.routes';
+import { setupBot } from './bot';
 
 dotenv.config();
 
@@ -51,6 +53,7 @@ app.use((req: any, _res: Response, next: NextFunction) => {
 });
 
 // ── Middleware ───────────────────────────────────────────────────────────────
+app.use(compression());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -64,6 +67,9 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 
 // ── DB ulanish ───────────────────────────────────────────────────────────────
 connectDB();
+
+// ── Telegram Bot ─────────────────────────────────────────────────────────────
+setupBot();
 
 // ── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api', (_req: Request, res: Response) => {
