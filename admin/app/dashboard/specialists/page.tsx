@@ -135,8 +135,9 @@ export default function SpecialistsPage() {
             <p style={{ color: 'var(--text-muted)' }}>Ma'lumotlar yuklanmoqda...</p>
           </div>
         ) : (
-          <table className="admin-table">
-            <thead>
+          <div className="table-responsive">
+            <table className="admin-table">
+              <thead>
               <tr>
                 <th>Mutaxassis</th>
                 <th>Ma'lumotlar</th>
@@ -246,6 +247,7 @@ export default function SpecialistsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
 
         {specialists.length === 0 && !isLoading && (

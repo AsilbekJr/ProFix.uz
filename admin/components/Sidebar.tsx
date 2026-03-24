@@ -57,7 +57,7 @@ export default function Sidebar() {
             <Building2 size={24} strokeWidth={2.5} />
           </div>
           <div>
-            <h1 style={{ fontWeight: 900, fontSize: '16px', letterSpacing: '-0.5px', color: 'var(--text)' }}>Mahalla-Servis</h1>
+            <h1 style={{ fontWeight: 900, fontSize: '18px', letterSpacing: '-0.5px', color: 'var(--text)' }}>Pro<span style={{color: 'var(--primary)'}}>Fix</span>.uz</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px var(--success)' }} />
               <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>

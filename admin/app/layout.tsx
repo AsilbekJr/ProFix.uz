@@ -9,8 +9,8 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Mahalla-Servis | Admin Panel',
-  description: 'Mahalla-Servis platformasini boshqarish paneli',
+  title: 'ProFix.uz | Admin Panel',
+  description: 'ProFix.uz platformasini boshqarish paneli',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

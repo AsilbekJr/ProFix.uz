@@ -76,7 +76,7 @@ export default function UsersPage() {
              <p>Ma'lumotlar yuklanmoqda...</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table className="admin-table">
               <thead>
                 <tr>

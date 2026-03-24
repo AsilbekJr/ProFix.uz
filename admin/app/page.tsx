@@ -68,7 +68,7 @@ export default function LoginPage() {
           </div>
           <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.5px' }}>Admin Panel</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '6px', fontWeight: 500 }}>
-            Mahalla-Servis boshqaruv tizimi
+            ProFix.uz boshqaruv tizimi
           </p>
         </div>
 

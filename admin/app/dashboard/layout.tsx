@@ -4,13 +4,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
-      <main style={{
-        marginLeft: 260,
-        flex: 1,
-        padding: '32px',
-        maxWidth: 'calc(100vw - 260px)',
-        overflow: 'auto',
-      }}>
+      <main className="admin-main">
         {children}
       </main>
     </div>
