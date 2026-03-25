@@ -1,4 +1,5 @@
-import { useParams, useNavigate, useLocation, useEffect } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useGetSpecialistByIdQuery } from '../store/apiSlice';
 import {
   ChevronLeft, Star, MapPin, BadgeCheck, Wrench, AlertCircle,
