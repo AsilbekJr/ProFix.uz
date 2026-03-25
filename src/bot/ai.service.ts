@@ -113,34 +113,40 @@ Return ONLY a valid JSON object (no markdown, no explanation):
 export const analyzeImageWithAI = async (imageUrl: string, promptText: string = ''): Promise<ParsedRequest | null> => {
   if (!process.env.GEMINI_API_KEY) {
     console.warn('⚠️ GEMINI_API_KEY topilmadi!');
+    if (promptText) return keywordFallback(promptText);
     return null;
   }
   try {
-    const imageResp = await fetch(imageUrl);
+    console.log('📷 Downloading image from:', imageUrl.substring(0, 80));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const imageResp = await fetch(imageUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!imageResp.ok) throw new Error(`Download failed: ${imageResp.status}`);
     const arrayBuffer = await imageResp.arrayBuffer();
     const base64Data = Buffer.from(arrayBuffer).toString('base64');
-    const mimeType = imageResp.headers.get('content-type') || 'image/jpeg';
+    console.log(`📷 Image size: ${(arrayBuffer.byteLength / 1024).toFixed(0)} KB, sending to Gemini...`);
 
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `You are ProFix.uz assistant. Analyze this image${promptText ? `, and note the user said: "${promptText}"` : ''}.
 
-Return ONLY a valid JSON object:
-{"categoryName": "one of: Santexnika xizmatlari | Elektr xizmatlari | Maishiy texnika ta'mirlash | Qurilish va ta'mirlash | Kompyuter va IT xizmatlari | Mebel yig'ish / tuzatish | Yuk tashish xizmatlari", "isUrgent": true_or_false, "summary": "brief description in Uzbek", "address": null}`;
+Return ONLY a valid JSON object (no markdown, no explanation):
+{"categoryName": "one of: Santexnika xizmatlari | Elektr xizmatlari | Maishiy texnika ta'mirlash | Qurilish va ta'mirlash | Kompyuter va IT xizmatlari | Mebel yig'ish / tuzatish | Yuk tashish xizmatlari", "isUrgent": true_or_false, "summary": "brief description in Uzbek of what is broken", "address": null}`;
 
     const result = await model.generateContent([
       prompt,
-      { inlineData: { data: base64Data, mimeType } }
+      { inlineData: { data: base64Data, mimeType: 'image/jpeg' } }
     ]);
     const responseText = result.response.text();
-    console.log('Gemini image raw response:', responseText.substring(0, 200));
+    console.log('Gemini image response:', responseText.substring(0, 200));
     
     const parsed = extractJSON(responseText);
     if (parsed && parsed.categoryName) return parsed;
-    
     if (promptText) return keywordFallback(promptText);
     return null;
   } catch (error: any) {
     console.error('AI Image Analysis Error:', error?.message || error);
+    if (promptText) return keywordFallback(promptText);
     return null;
   }
 };

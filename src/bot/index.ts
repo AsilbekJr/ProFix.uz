@@ -137,15 +137,19 @@ export const setupBot = () => {
       const caption = ctx.message.caption || '';
 
       const parsedRequest = await analyzeImageWithAI(fileLink.href, caption);
+
+      // If AI couldn't analyze the photo, ask for text description
       if (!parsedRequest) {
-        return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined,
-          'Rasmni tahlil qilishda xatolik. Iltimos, muammoingizni matnda yozing.');
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined,
+          '📷 Rasmni tahlil qila olmadim. Iltimos, muammoingizni qisqacha ♿ matnda yozing (masalan: "truba oqyapti"):');
+        return;
       }
+
       await ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id);
       await askForLocation(ctx, parsedRequest);
     } catch (err) {
       console.error(err);
-      ctx.reply("Kechirasiz, rasmni o'qishda xatolik yuz berdi 😟.");
+      ctx.reply("Kechirasiz, rasmni o'qishda xatolik yuz berdi. Muammoingizni matnda yozing.");
     }
   });
 
