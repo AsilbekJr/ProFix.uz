@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useEffect } from 'react-router-dom';
 import { useGetSpecialistByIdQuery } from '../store/apiSlice';
 import {
   ChevronLeft, Star, MapPin, BadgeCheck, Wrench, AlertCircle,
@@ -10,6 +10,7 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 
+
 export default function SpecialistProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -18,6 +19,19 @@ export default function SpecialistProfilePage() {
   const specialist = res?.data;
   const user = useSelector((state: RootState) => state.auth.user);
   const isMe = user?.id === specialist?.userId;
+
+  // ── Telegram native BackButton integration ─────────────────────────────
+  useEffect(() => {
+    // @ts-ignore
+    const twa = window.Telegram?.WebApp;
+    if (!twa) return;
+    twa.BackButton.show();
+    twa.BackButton.onClick(() => navigate(-1));
+    return () => {
+      twa.BackButton.hide();
+      twa.BackButton.offClick();
+    };
+  }, [navigate]);
 
   if (isLoading) {
     return (
