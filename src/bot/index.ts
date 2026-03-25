@@ -64,6 +64,8 @@ export const setupBot = () => {
 
   // ── /start ────────────────────────────────────────────────────────────────
   bot.start((ctx) => {
+    // Clear any pending session so next message is treated as a fresh problem
+    sessions.delete(ctx.from.id);
     ctx.reply(
       `Assalomu alaykum, ${ctx.from.first_name}! 👋\n\nMen **ProFix.uz** aqlli yordamchisiman.\n\n📝 Muammoingizni yozing yoki 📷 buzilgan narsaning rasmini yuboring — men siz yaqinidagi eng yaxshi ustani topib beraman!`,
       Markup.inlineKeyboard([
