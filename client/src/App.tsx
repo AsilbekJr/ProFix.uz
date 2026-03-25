@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './store';
@@ -50,7 +50,7 @@ export default function App() {
   }, [userData, token, dispatch]);
 
   return (
-    <BrowserRouter>
+    <>
       <Toaster
         position="top-center"
         toastOptions={{
@@ -87,6 +87,6 @@ export default function App() {
           } />
         </Routes>
       </Suspense>
-    </BrowserRouter>
+    </>
   );
 }
