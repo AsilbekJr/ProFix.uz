@@ -1,11 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, User, Plus } from 'lucide-react';
+import { Home, ClipboardList, User, Plus, Briefcase } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 export default function BottomNav() {
   const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const links = [
     { to: '/', icon: Home, label: 'Bosh', end: true },
+    ...(user?.role === 'SPECIALIST' ? [{ to: '/jobs', icon: Briefcase, label: "E'lonlar", end: false }] : []),
     { to: '/orders', icon: ClipboardList, label: 'Buyurtma', end: false },
   ];
 

@@ -20,6 +20,7 @@ const ApplySpecialistPage = React.lazy(() => import('./pages/ApplySpecialistPage
 const SpecialistProfilePage = React.lazy(() => import('./pages/SpecialistProfilePage'));
 const SpecialistsListPage = React.lazy(() => import('./pages/SpecialistsListPage'));
 const ReviewPage = React.lazy(() => import('./pages/ReviewPage'));
+const JobBoardPage = React.lazy(() => import('./pages/JobBoardPage'));
 
 const PageLoader = () => (
   <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
@@ -74,6 +75,7 @@ export default function App() {
           <Route path="/category/:id" element={<PrivateRoute><SpecialistsListPage /></PrivateRoute>} />
           <Route path="/specialists/:id" element={<PrivateRoute><SpecialistProfilePage /></PrivateRoute>} />
           <Route path="/review/:orderId" element={<PrivateRoute><ReviewPage /></PrivateRoute>} />
+          <Route path="/jobs" element={<PrivateRoute><JobBoardPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>

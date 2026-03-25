@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { useGetMyOrdersQuery, useGetOpenTendersQuery } from '../store/apiSlice';
+import { useGetMyOrdersQuery } from '../store/apiSlice';
 import { OrderStatus } from '../types';
 import { 
   Hourglass, CheckCircle2, Wrench, CheckCircle, 
@@ -22,17 +22,11 @@ const STATUS: Record<OrderStatus, { label: string; badge: string; icon: React.Re
 export default function OrdersPage() {
   const { token, user } = useSelector((state: RootState) => state.auth);
   const { data: ordersRes, refetch, isLoading } = useGetMyOrdersQuery();
-  const { data: tendersRes, refetch: refetchTenders, isLoading: tendersLoading } = useGetOpenTendersQuery(undefined, {
-    skip: user?.role !== 'SPECIALIST'
-  });
   
   const navigate = useNavigate();
   const [liveStatuses, setLiveStatuses] = useState<Record<string, OrderStatus>>({});
-  const [activeTab, setActiveTab] = useState<'my' | 'tenders'>('my');
 
   const orders = ordersRes?.data || [];
-  const tenders = tendersRes?.data || [];
-  const displayOrders = activeTab === 'my' ? orders : tenders;
 
   useEffect(() => {
     if (!token) return;
@@ -46,7 +40,7 @@ export default function OrdersPage() {
     return () => { socket.disconnect(); };
   }, [token, orders.length]);
 
-  if (isLoading || tendersLoading) {
+  if (isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 12 }}>
         <Loader2 size={32} className="animate-spin" style={{ color: 'var(--primary)' }} />
@@ -72,49 +66,15 @@ export default function OrdersPage() {
           Buyurtmalar
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.4 }}>
-          {user?.role === 'SPECIALIST' 
-            ? "Mijozlarning tenderlari va o'zingizning buyurtmalaringiz"
-            : "Barcha so'rovlaringiz va ularning holati"}
+          Barcha so'rovlaringiz va ularning holati
         </p>
 
-        {user?.role === 'SPECIALIST' && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-            {([
-              { id: 'my' as const, label: 'Mening ishlarim', count: undefined },
-              { id: 'tenders' as const, label: 'Tenderlar', count: tenders.length }
-            ]).map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  flex: 1, height: 44, borderRadius: 14, border: 'none',
-                  fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  transition: 'all 0.2s', cursor: 'pointer',
-                  background: activeTab === tab.id ? 'var(--primary)' : 'var(--bg-input)',
-                  color: activeTab === tab.id ? '#fff' : 'var(--text-sub)',
-                  boxShadow: activeTab === tab.id ? '0 4px 16px var(--primary-glow)' : 'none'
-                }}
-              >
-                {tab.label}
-                {(tab.count ?? 0) > 0 && (
-                  <span style={{
-                    background: activeTab === tab.id ? 'rgba(0,0,0,0.2)' : 'var(--primary)',
-                    color: '#fff', fontSize: 10, height: 20, padding: '0 8px',
-                    borderRadius: 10, display: 'flex', alignItems: 'center'
-                  }}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Tabs o'chirildi - Tenderlar endi alohida "E'lonlar" sahifasida */}
       </header>
 
       {/* ── LIST ── */}
       <main style={{ padding: '20px 20px' }}>
-        {displayOrders.length === 0 ? (
+        {orders.length === 0 ? (
           <div style={{
             padding: '48px 20px', textAlign: 'center', background: 'var(--bg-input)',
             borderRadius: 24, border: '1px dashed var(--border)'
@@ -127,7 +87,7 @@ export default function OrdersPage() {
               <ClipboardList size={32} />
             </div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
-              {activeTab === 'tenders' ? "Hozircha tenderlar yo'q" : "Sizda hali buyurtmalar yo'q"}
+              Sizda hali buyurtmalar yo'q
             </p>
             <p style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 8 }}>
               Yangi buyurtma hosil bo'lganda bu yerda ko'rinadi
@@ -135,7 +95,7 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {displayOrders.map(order => {
+            {orders.map(order => {
               const status = liveStatuses[order.id] || order.status;
               const s = STATUS[status] || STATUS.PENDING;
               return (
