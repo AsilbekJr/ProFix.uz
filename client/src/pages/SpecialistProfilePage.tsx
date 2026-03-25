@@ -1,15 +1,21 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useGetSpecialistByIdQuery } from '../store/apiSlice';
+import { 
+  useGetSpecialistByIdQuery, 
+  useUpdateMeMutation, 
+  useUpdateSpecialistMeMutation 
+} from '../store/apiSlice';
 import {
   ChevronLeft, Star, MapPin, BadgeCheck, Wrench, AlertCircle,
   Image as ImageIcon, Calendar, Loader2,
   User, PhoneCall, ShieldCheck, CheckCircle2, Briefcase,
-  MessageCircle,
+  MessageCircle, Edit3, X, Save,
   ChevronRight
 } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
+import toast from 'react-hot-toast';
+import { setCredentials } from '../store/authSlice';
 
 
 export default function SpecialistProfilePage() {
@@ -18,8 +24,43 @@ export default function SpecialistProfilePage() {
   const location = useLocation();
   const { data: res, isLoading } = useGetSpecialistByIdQuery(id!);
   const specialist = res?.data;
+  const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const isMe = user?.id === specialist?.userId;
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ phone: '', bio: '', location: '' });
+
+  const [updateUser, { isLoading: isUpdatingUser }] = useUpdateMeMutation();
+  const [updateSpecialist, { isLoading: isUpdatingSpec }] = useUpdateSpecialistMeMutation();
+
+  const handleEditClick = () => {
+    setEditForm({
+      phone: specialist?.user?.phone || '',
+      bio: specialist?.bio || '',
+      location: specialist?.location || ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      if (editForm.phone !== specialist?.user?.phone) {
+        const uRes = await updateUser({ phone: editForm.phone }).unwrap();
+        dispatch(setCredentials({ user: uRes.data, token: localStorage.getItem('token') || '' }));
+      }
+      
+      const sRes = await updateSpecialist({
+        bio: editForm.bio,
+        location: editForm.location
+      }).unwrap();
+
+      toast.success("Ma'lumotlar saqlandi");
+      setIsEditing(false);
+    } catch (err: any) {
+      toast.error(err.data?.message || err.message || "Xatolik ro'y berdi");
+    }
+  };
 
   // ── Telegram native BackButton integration ─────────────────────────────
   useEffect(() => {
@@ -150,13 +191,47 @@ export default function SpecialistProfilePage() {
 
       <main style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
         
+        {/* ── PHONE NUMBER (Only for Me) ── */}
+        {isMe && (
+          <section>
+            <h3 className="section-label" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <PhoneCall size={20} style={{ color: 'var(--primary)' }} /> Telefon raqam
+            </h3>
+            <div className="card" style={{ padding: 20 }}>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  className="input"
+                  value={editForm.phone}
+                  onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+998 90 123 45 67"
+                />
+              ) : (
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+                  {specialist.user?.phone || 'Kiritilmagan'}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+        
         {/* ── BIO ── */}
         <section>
           <h3 className="section-label" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <Briefcase size={20} style={{ color: 'var(--primary)' }} /> Tashrifnoma (Bio)
           </h3>
           <div className="card" style={{ padding: 20, fontSize: 15, lineHeight: 1.6, color: 'var(--text)' }}>
-            {specialist.bio || <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>Ustaning o'zi haqida ma'lumoti hozircha yo'q.</span>}
+            {isEditing ? (
+              <textarea
+                className="input"
+                style={{ minHeight: 100, padding: 12, resize: 'vertical' }}
+                value={editForm.bio}
+                onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                placeholder="O'zingiz haqingizda, tajribangiz va xizmatlaringiz haqida yozing..."
+              />
+            ) : (
+              specialist.bio || <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>Ustaning o'zi haqida ma'lumoti hozircha yo'q.</span>
+            )}
           </div>
         </section>
 
@@ -169,7 +244,18 @@ export default function SpecialistProfilePage() {
               </div>
               <div>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-sub)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Xizmat hududi</span>
-                <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginTop: 2 }}>{specialist.location || 'Barcha hududlar'}</p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="input"
+                    style={{ marginTop: 8 }}
+                    value={editForm.location}
+                    onChange={e => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="Masalan: Qibray, Chirchiq"
+                  />
+                ) : (
+                  <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginTop: 2 }}>{specialist.location || 'Barcha hududlar'}</p>
+                )}
               </div>
             </div>
             <div className="divider" />
@@ -247,81 +333,95 @@ export default function SpecialistProfilePage() {
 
       </main>
       
-      {/* ── STICKY CALL ACTION ── */}
-      {!isMe && (
+      {/* ── STICKY CALL OR EDIT ACTION ── */}
+      <div
+        className="animate-in slide-in-from-bottom-4 duration-500"
+        style={{
+          position: 'fixed',
+          bottom: isMe ? 24 : 104,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: 430,
+          padding: '0 16px',
+          zIndex: 101,
+          boxSizing: 'border-box',
+        }}
+      >
         <div
-          className="animate-in slide-in-from-bottom-4 duration-500"
           style={{
-            position: 'fixed',
-            bottom: 104,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '100%',
-            maxWidth: 430,
-            padding: '0 16px',
-            zIndex: 101,
-            boxSizing: 'border-box',
+            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10,
+            padding: '10px 12px', background: 'hsl(var(--card) / 0.92)',
+            backdropFilter: 'blur(20px) saturate(1.8)', border: '1px solid hsl(var(--border))',
+            borderRadius: 24, boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              padding: '10px 12px',
-              background: 'hsl(var(--card) / 0.92)',
-              backdropFilter: 'blur(20px) saturate(1.8)',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: 24,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
-            }}
-          >
-            <a
-              href={`tel:${specialist.user?.phone}`}
-              style={{
-                width: 52, height: 52, borderRadius: 16, flexShrink: 0,
-                background: '#10b981',
-                color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 14px rgba(16,185,129,0.4)',
-              }}
-              className="active:scale-95 transition-transform"
-            >
-              <PhoneCall size={22} />
-            </a>
-            <button
-              onClick={() => {
-                const stateToPass = location.state || {};
-                const catId = stateToPass.categoryId || specialist.services?.[0]?.categoryId;
-                const catName = stateToPass.categoryName || specialist.services?.[0]?.category?.name;
-                navigate('/order/create', { state: { categoryId: catId, categoryName: catName, specialistId: specialist.id }});
-              }}
-              className="active:scale-95 transition-transform"
-              style={{
-                flex: 1,
-                height: 52,
-                borderRadius: 16,
-                fontSize: 15,
-                fontWeight: 700,
-                background: 'var(--primary)',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                boxShadow: 'var(--shadow-glow)',
-                letterSpacing: '0.2px',
-              }}
-            >
-              <CheckCircle2 size={20} color="#fff" />
-              Bu ustani chaqirish
-            </button>
-          </div>
+          {isMe ? (
+            isEditing ? (
+              <>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="btn btn-ghost"
+                  style={{ width: 52, height: 52, borderRadius: 16, flexShrink: 0, padding: 0 }}
+                >
+                  <X size={22} />
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isUpdatingUser || isUpdatingSpec}
+                  className="btn btn-primary"
+                  style={{ flex: 1, height: 52, borderRadius: 16, fontSize: 16, display: 'flex', gap: 8, boxShadow: 'var(--shadow-glow)' }}
+                >
+                  {(isUpdatingUser || isUpdatingSpec) ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+                  Saqlash
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleEditClick}
+                className="btn btn-primary"
+                style={{ flex: 1, height: 52, borderRadius: 16, fontSize: 16, display: 'flex', gap: 8, boxShadow: 'var(--shadow-glow)' }}
+              >
+                <Edit3 size={20} /> Profilni Tahrirlash
+              </button>
+            )
+          ) : (
+            <>
+              <a
+                href={`tel:${specialist.user?.phone}`}
+                style={{
+                  width: 52, height: 52, borderRadius: 16, flexShrink: 0,
+                  background: '#10b981', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 14px rgba(16,185,129,0.4)',
+                }}
+                className="active:scale-95 transition-transform"
+              >
+                <PhoneCall size={22} />
+              </a>
+              <button
+                onClick={() => {
+                  const stateToPass = location.state || {};
+                  const catId = stateToPass.categoryId || specialist.services?.[0]?.categoryId;
+                  const catName = stateToPass.categoryName || specialist.services?.[0]?.category?.name;
+                  navigate('/order/create', { state: { categoryId: catId, categoryName: catName, specialistId: specialist.id }});
+                }}
+                className="active:scale-95 transition-transform"
+                style={{
+                  flex: 1, height: 52, borderRadius: 16, fontSize: 15, fontWeight: 700,
+                  background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: 'var(--shadow-glow)', letterSpacing: '0.2px',
+                }}
+              >
+                <CheckCircle2 size={20} color="#fff" />
+                Bu ustani chaqirish
+              </button>
+            </>
+          )}
         </div>
-      )}
+      </div>
+
     </div>
   );
 }

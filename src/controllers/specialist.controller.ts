@@ -1,7 +1,39 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { clearUserCache } from '../middleware/auth.middleware';
 import { uploadToCloud } from '../config/cloudinary';
 import { clearUserCache } from '../middleware/auth.middleware';
+
+// Update specialist profile (bio, location)
+export const updateSpecialistProfile = async (req: Request, res: Response): Promise<any> => {
+  try {
+    if (!req.user || req.user.role !== 'SPECIALIST') {
+      return res.status(403).json({ success: false, message: 'Faqat ustalar tahrirlay oladi' });
+    }
+
+    const { bio, location, locationLat, locationLng } = req.body;
+
+    const specialist = await prisma.specialist.findUnique({
+      where: { userId: req.user.id }
+    });
+
+    if (!specialist) return res.status(404).json({ success: false, message: 'Usta profili topilmadi' });
+
+    const updated = await prisma.specialist.update({
+      where: { id: specialist.id },
+      data: {
+        ...(bio !== undefined && { bio }),
+        ...(location !== undefined && { location }),
+        ...(locationLat !== undefined && { locationLat }),
+        ...(locationLng !== undefined && { locationLng })
+      }
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 export const getSpecialists = async (req: Request, res: Response): Promise<any> => {
   try {

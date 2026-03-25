@@ -5,7 +5,9 @@ import {
   rateSpecialist,
   applyAsSpecialist,
   verifySpecialist,
-  unverifySpecialist
+  verifySpecialist,
+  unverifySpecialist,
+  updateSpecialistProfile
 } from '../controllers/specialist.controller';
 import { protect, adminOnly } from '../middleware/auth.middleware';
 import { upload } from '../middleware/upload.middleware';
@@ -14,6 +16,8 @@ const router = Router();
 
 router.get('/', getSpecialists);
 router.get('/:id', getSpecialistById);
+
+router.put('/me', protect, updateSpecialistProfile);
 
 router.post('/:id/rate', protect, rateSpecialist);
 router.post('/apply', protect, upload.array('documents', 5), applyAsSpecialist);

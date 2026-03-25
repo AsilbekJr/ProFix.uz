@@ -100,6 +100,10 @@ export const api = createApi({
       query: (body) => ({ url: '/specialists/apply', method: 'POST', body }),
       invalidatesTags: ['User'],
     }),
+    updateSpecialistMe: builder.mutation<ApiResponse<Specialist>, Partial<Specialist>>({
+      query: (body) => ({ url: '/specialists/me', method: 'PUT', body }),
+      invalidatesTags: ['Specialist', 'User'],
+    }),
     
     // ── REVIEWS ───────────────────────────────────────────
     createReview: builder.mutation<ApiResponse<Review>, { orderId: string; rating: number; comment?: string }>({
@@ -128,6 +132,7 @@ export const {
   useCancelOrderMutation,
   useGetSpecialistsQuery,
   useGetSpecialistByIdQuery,
+  useUpdateSpecialistMeMutation,
   useRateSpecialistMutation,
   useApplyAsSpecialistMutation,
   useCreateReviewMutation,
