@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { clearUserCache } from '../middleware/auth.middleware';
 import { uploadToCloud } from '../config/cloudinary';
-import { clearUserCache } from '../middleware/auth.middleware';
 
 // Update specialist profile (bio, location)
 export const updateSpecialistProfile = async (req: Request, res: Response): Promise<any> => {

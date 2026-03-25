@@ -5,7 +5,6 @@ import {
   rateSpecialist,
   applyAsSpecialist,
   verifySpecialist,
-  verifySpecialist,
   unverifySpecialist,
   updateSpecialistProfile
 } from '../controllers/specialist.controller';

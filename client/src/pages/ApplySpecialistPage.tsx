@@ -329,7 +329,7 @@ export default function ApplySpecialistPage() {
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, mt: 16 }}>
+            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <button className="btn-icon" onClick={() => setStep(2)} style={{ width: 64, height: 56, borderRadius: 16 }}>
                 <ArrowLeft size={24} />
               </button>
