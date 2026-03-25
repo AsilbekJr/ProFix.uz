@@ -48,11 +48,12 @@ export const setupBot = () => {
     }
   });
 
-  // Handle Text
+  // Handle Text — skip bot commands like /start
   bot.on('text', async (ctx) => {
+    const text = ctx.message.text;
+    if (text.startsWith('/')) return; // ignore all commands here, they have their own handlers
     try {
       const waitMsg = await ctx.reply("⏳ Xabaringizni tahlil qilyapman, biroz kuting...");
-      const text = ctx.message.text;
 
       const parsedRequest = await analyzeTextWithAI(text);
       await handleFindSpecialists(ctx, parsedRequest, waitMsg.message_id);
