@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   useGetSpecialistByIdQuery, 
@@ -333,31 +333,31 @@ export default function SpecialistProfilePage() {
 
       </main>
       
-      {/* ── STICKY CALL OR EDIT ACTION ── */}
-      <div
-        className="animate-in slide-in-from-bottom-4 duration-500"
-        style={{
-          position: 'fixed',
-          bottom: isMe ? 24 : 104,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '100%',
-          maxWidth: 430,
-          padding: '0 16px',
-          zIndex: 101,
-          boxSizing: 'border-box',
-        }}
-      >
+      {/* ── STICKY OR EDIT ACTION ── */}
+      {isMe && (
         <div
+          className="animate-in slide-in-from-bottom-4 duration-500"
           style={{
-            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10,
-            padding: '10px 12px', background: 'hsl(var(--card) / 0.92)',
-            backdropFilter: 'blur(20px) saturate(1.8)', border: '1px solid hsl(var(--border))',
-            borderRadius: 24, boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: 430,
+            padding: '0 16px',
+            zIndex: 101,
+            boxSizing: 'border-box',
           }}
         >
-          {isMe ? (
-            isEditing ? (
+          <div
+            style={{
+              display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10,
+              padding: '10px 12px', background: 'hsl(var(--card) / 0.92)',
+              backdropFilter: 'blur(20px) saturate(1.8)', border: '1px solid hsl(var(--border))',
+              borderRadius: 24, boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+            }}
+          >
+            {isEditing ? (
               <>
                 <button
                   onClick={() => setIsEditing(false)}
@@ -384,43 +384,10 @@ export default function SpecialistProfilePage() {
               >
                 <Edit3 size={20} /> Profilni Tahrirlash
               </button>
-            )
-          ) : (
-            <>
-              <a
-                href={`tel:${specialist.user?.phone}`}
-                style={{
-                  width: 52, height: 52, borderRadius: 16, flexShrink: 0,
-                  background: '#10b981', color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 14px rgba(16,185,129,0.4)',
-                }}
-                className="active:scale-95 transition-transform"
-              >
-                <PhoneCall size={22} />
-              </a>
-              <button
-                onClick={() => {
-                  const stateToPass = location.state || {};
-                  const catId = stateToPass.categoryId || specialist.services?.[0]?.categoryId;
-                  const catName = stateToPass.categoryName || specialist.services?.[0]?.category?.name;
-                  navigate('/order/create', { state: { categoryId: catId, categoryName: catName, specialistId: specialist.id }});
-                }}
-                className="active:scale-95 transition-transform"
-                style={{
-                  flex: 1, height: 52, borderRadius: 16, fontSize: 15, fontWeight: 700,
-                  background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  boxShadow: 'var(--shadow-glow)', letterSpacing: '0.2px',
-                }}
-              >
-                <CheckCircle2 size={20} color="#fff" />
-                Bu ustani chaqirish
-              </button>
-            </>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

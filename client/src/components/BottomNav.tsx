@@ -36,22 +36,6 @@ export default function BottomNav() {
           ))}
         </div>
 
-        {/* FAB */}
-        <button
-          onClick={() => navigate('/order/create')}
-          aria-label="Buyurtma yarat"
-          style={{
-            width: 56, height: 56, borderRadius: 20,
-            background: 'var(--gradient-brand)',
-            border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', boxShadow: '0 8px 28px var(--primary-glow)',
-            transition: 'all 0.2s',
-          }}
-        >
-          <Plus size={28} strokeWidth={2.5} color="#fff" />
-        </button>
-
         {/* Right: Profile */}
         <div style={{ display: 'flex', gap: 4 }}>
           <NavLink to="/profile" style={{ textDecoration: 'none' }}>

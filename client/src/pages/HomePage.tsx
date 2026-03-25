@@ -74,6 +74,10 @@ export default function HomePage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)' }} />
+              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '0.5px' }}>ProFix</span>
+            </div>
             <p style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 4, fontWeight: 500 }}>{greeting}</p>
             <h1 style={{
               fontFamily: 'Poppins, sans-serif', fontSize: 26, fontWeight: 800,
