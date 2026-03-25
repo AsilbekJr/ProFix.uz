@@ -55,16 +55,19 @@ const keywordFallback = (text: string): ParsedRequest => {
   const lower = text.toLowerCase();
   for (const [keyword, category] of Object.entries(KEYWORD_MAP)) {
     if (lower.includes(keyword)) {
-      return {
-        categoryName: category,
-        isUrgent: false,
-        summary: text,
-        address: undefined,
-      };
+      return { categoryName: category, isUrgent: false, summary: text, address: undefined };
     }
   }
-  // Generic fallback
   return { categoryName: 'Qurilish va ta\'mirlash', isUrgent: false, summary: text };
+};
+
+// Exported version for use in bot handler
+export const keywordFallbackCategory = (text: string): string => {
+  const lower = text.toLowerCase();
+  for (const [keyword, category] of Object.entries(KEYWORD_MAP)) {
+    if (lower.includes(keyword)) return category;
+  }
+  return 'Qurilish va ta\'mirlash';
 };
 
 const extractJSON = (text: string): ParsedRequest | null => {

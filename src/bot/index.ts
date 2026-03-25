@@ -1,6 +1,6 @@
 import { Telegraf, Markup } from 'telegraf';
 import { PrismaClient } from '@prisma/client';
-import { analyzeTextWithAI, analyzeImageWithAI, ParsedRequest } from './ai.service';
+import { analyzeTextWithAI, analyzeImageWithAI, ParsedRequest, keywordFallbackCategory } from './ai.service';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -132,16 +132,37 @@ export const setupBot = () => {
   bot.on('photo', async (ctx) => {
     try {
       const waitMsg = await ctx.reply('⏳ Rasmni tahlil qilyapman...');
-      const photo = ctx.message.photo[ctx.message.photo.length - 1];
+      const photos = ctx.message.photo;
+      // Pick medium size photo (index 1 or last-1, ~300KB) instead of highest resolution (3-5MB)
+      const photo = photos.length > 2 ? photos[photos.length - 2] : photos[photos.length - 1];
       const fileLink = await ctx.telegram.getFileLink(photo.file_id);
       const caption = ctx.message.caption || '';
 
       const parsedRequest = await analyzeImageWithAI(fileLink.href, caption);
 
-      // If AI couldn't analyze the photo, ask for text description
       if (!parsedRequest) {
+        // Vision failed: save a generic session so user can still share location
+        const fallback: ParsedRequest = {
+          categoryName: caption ? keywordFallbackCategory(caption) : 'Qurilish va ta\'mirlash',
+          isUrgent: false,
+          summary: caption || 'Rasmdan aniqlangan muammo',
+        };
+        sessions.set(ctx.from.id, { parsedRequest: fallback, step: 'waiting_location' });
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined,
-          '📷 Rasmni tahlil qila olmadim. Iltimos, muammoingizni qisqacha ♿ matnda yozing (masalan: "truba oqyapti"):');
+          `✅ Rasmni qabul qildim! 
+📋 **Muammo:** ${fallback.summary}
+
+📍 Endi sizga eng yaqin ustani topish uchun manzilingiz kerak.
+Quyidagilardan birini tanlang:`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '📍 GPS Lokatsiyamni ulashish', callback_data: 'share_location' }],
+                [{ text: '✏️ Qo\'lda yozaman', callback_data: 'manual_address' }]
+              ]
+            }
+          });
         return;
       }
 
@@ -149,7 +170,7 @@ export const setupBot = () => {
       await askForLocation(ctx, parsedRequest);
     } catch (err) {
       console.error(err);
-      ctx.reply("Kechirasiz, rasmni o'qishda xatolik yuz berdi. Muammoingizni matnda yozing.");
+      ctx.reply("Kechirasiz, rasmni o'qishda xatolik. Muammoingizni matnda yozing.");
     }
   });
 
