@@ -56,6 +56,8 @@ export function useTelegramInit() {
           } else if (startParam.startsWith('order_')) {
             const orderId = startParam.replace('order_', '');
             navigate(`/orders/${orderId}`, { replace: true });
+          } else if (startParam === 'create_order') {
+            navigate('/order/create', { replace: true });
           }
         }
       } catch (err) {

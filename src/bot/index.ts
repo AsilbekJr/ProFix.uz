@@ -300,8 +300,8 @@ Quyidagilardan birini tanlang:`,
           buttons.push([Markup.button.url(btnText, btnUrl)]);
         });
       } else {
-        replyText += `\nAfsuski, bu hududda hozircha mos ustalar topilmadi.\nBoshqa hududdan izlab ko'rishingiz mumkin.`;
-        buttons.push([Markup.button.url('Barcha ustalar 👨‍🔧', twaUrl)]);
+        replyText += `\nAfsuski, bu hududda hozircha mos ustalar topilmadi.\nBoshqa hududdan izlab ko'rishingiz mumkin yoki tegishli ustalarga ariza qoldiring:`;
+        buttons.push([Markup.button.url('📝 Ariza qoldirish', `${twaUrl}?startapp=create_order`)]);
       }
 
       // Try edit, fall back to fresh reply if it fails
