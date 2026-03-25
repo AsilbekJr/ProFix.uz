@@ -192,11 +192,10 @@ export const getOpenTenders = async (req: Request, res: Response): Promise<any> 
     const orders = await prisma.order.findMany({
       where: { 
         OR: [
-          // Ochiq tenderlar - mutaxassisligiga mos va hech kimga biriktirilmagan
+          // Barcha ochiq tenderlar - mutaxassisligidan qat'iy nazar
           {
             specialistId: null, 
-            status: 'PENDING',
-            categoryId: { in: categoryIds }
+            status: 'PENDING'
           },
           // Bevosita shu ustaga yuborilgan yoki usta tomonidan qabul qilingan buyurtmalar
           {
@@ -211,6 +210,8 @@ export const getOpenTenders = async (req: Request, res: Response): Promise<any> 
         specialistId: true,
         description: true,
         address: true,
+        locationLat: true,
+        locationLng: true,
         photos: true,
         createdAt: true,
         category: { select: { id: true, name: true } },
@@ -234,7 +235,15 @@ export const getOpenTenders = async (req: Request, res: Response): Promise<any> 
       return order;
     });
     
-    res.json({ success: true, data: sanitizedOrders });
+    res.json({ 
+      success: true, 
+      data: sanitizedOrders,
+      meta: {
+        specialistLat: specialist.locationLat,
+        specialistLng: specialist.locationLng,
+        categoryIds
+      }
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
   }
