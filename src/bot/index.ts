@@ -213,96 +213,114 @@ Quyidagilardan birini tanlang:`,
     location: { lat?: number; lng?: number; cityName?: string; textAddress?: string },
     waitMsgId: number
   ) {
-    const { categoryName, isUrgent, summary } = parsedRequest;
+    try {
+      const { categoryName, isUrgent, summary } = parsedRequest;
 
-    // 1. Find category
-    const categories = await prisma.category.findMany();
-    const matchedCategory =
-      categories.find(
-        (c) =>
-          c.name.toLowerCase().includes(categoryName.toLowerCase()) ||
-          categoryName.toLowerCase().includes(c.name.toLowerCase())
-      ) || categories[0];
+      // 1. Find category
+      const categories = await prisma.category.findMany();
+      const matchedCategory =
+        categories.find(
+          (c) =>
+            c.name.toLowerCase().includes(categoryName.toLowerCase()) ||
+            categoryName.toLowerCase().includes(c.name.toLowerCase())
+        ) || categories[0];
 
-    if (!matchedCategory) {
-      return ctx.telegram.editMessageText(ctx.chat.id, waitMsgId, undefined,
-        `Afsuski, bu toifada ustalar topilmadi.`);
-    }
-
-    // 2. Find all specialists in that category
-    const services = await prisma.service.findMany({
-      where: { categoryId: matchedCategory.id },
-      include: {
-        specialist: { include: { user: true } }
+      if (!matchedCategory) {
+        await ctx.reply('Afsuski, bu toifada ustalar topilmadi.');
+        return;
       }
-    });
 
-    let specialists = services
-      .filter((s) => s.specialist.isVerified)
-      .map((s) => s.specialist);
-
-    // 3. Filter/sort by location
-    const searchAddress = location.textAddress || location.cityName || '';
-    let specialistsWithDist: Array<typeof specialists[0] & { distKm?: number }> = [];
-
-    if (location.lat && location.lng) {
-      // GPS: sort by haversine distance, only those with coordinates OR matching address
-      specialistsWithDist = specialists
-        .filter((sp) => sp.locationLat && sp.locationLng)
-        .map((sp) => ({ ...sp, distKm: haversine(location.lat!, location.lng!, sp.locationLat!, sp.locationLng!) }))
-        .sort((a, b) => (a.distKm ?? 999) - (b.distKm ?? 999));
-
-      // Fallback: also include specialists with text location matching city
-      const withoutCoords = specialists
-        .filter((sp) => !sp.locationLat || !sp.locationLng)
-        .filter((sp) => location.cityName && sp.location?.toLowerCase().includes(location.cityName.toLowerCase()))
-        .map((sp) => ({ ...sp, distKm: undefined }));
-
-      specialistsWithDist = [...specialistsWithDist, ...withoutCoords];
-    } else if (searchAddress) {
-      // Text: filter by address string match
-      const lower = searchAddress.toLowerCase();
-      specialistsWithDist = specialists
-        .filter((sp) => sp.location && sp.location.toLowerCase().includes(lower))
-        .map((sp) => ({ ...sp, distKm: undefined }));
-
-      // Fallback: if nothing matched, return all
-      if (specialistsWithDist.length === 0) {
-        specialistsWithDist = specialists.map((sp) => ({ ...sp, distKm: undefined }));
-      }
-    } else {
-      specialistsWithDist = specialists.map((sp) => ({ ...sp, distKm: undefined }));
-    }
-
-    // Take top 3
-    const top3 = specialistsWithDist.slice(0, 3);
-    const twaUrl = getTwaUrl(ctx);
-
-    let replyText = `✅ **Muammo:** ${summary}\n`;
-    replyText += `📂 **Toifa:** ${matchedCategory.name}\n`;
-    if (location.cityName) replyText += `📍 **Hudud:** ${location.cityName}\n`;
-    if (location.textAddress) replyText += `📍 **Manzil:** ${location.textAddress}\n`;
-    if (isUrgent) replyText += `🚨 **Shoshilinch!**\n`;
-    replyText += `\nSizga eng mos ustalar:\n`;
-
-    const buttons: any[] = [];
-    if (top3.length > 0) {
-      top3.forEach((sp, idx) => {
-        const rating = sp.rating > 0 ? `${sp.rating}⭐` : 'Yangi';
-        const dist = sp.distKm != null ? ` · ${sp.distKm.toFixed(1)} km` : '';
-        const loc = sp.location ? ` (${sp.location})` : '';
-        replyText += `\n${idx + 1}. **${sp.user.name || 'Usta'}**${loc} — ${rating}${dist}`;
-        buttons.push([Markup.button.url(`👨‍🔧 ${sp.user.name} ga murojaat`, `${twaUrl}?startapp=specialist_${sp.id}`)]);
+      // 2. Find all specialists in that category
+      const services = await prisma.service.findMany({
+        where: { categoryId: matchedCategory.id },
+        include: { specialist: { include: { user: true } } }
       });
-    } else {
-      replyText += `\nAfsuski, bu hududda hozircha mos ustalar topilmadi.\nBoshqa hududdan izlab ko'rishlari mumkin:`;
-      buttons.push([Markup.button.url('Barcha ustalar 👨‍🔧', twaUrl)]);
-    }
 
-    await ctx.telegram.editMessageText(ctx.chat.id, waitMsgId, undefined, replyText, {
-      parse_mode: 'Markdown',
-      reply_markup: { inline_keyboard: buttons }
-    });
+      let specialists = services
+        .filter((s: any) => s.specialist.isVerified)
+        .map((s: any) => s.specialist);
+
+      // 3. Sort by location
+      let specialistsWithDist: Array<any> = [];
+
+      if (location.lat && location.lng) {
+        specialistsWithDist = specialists
+          .filter((sp: any) => sp.locationLat && sp.locationLng)
+          .map((sp: any) => ({
+            ...sp,
+            distKm: haversine(location.lat!, location.lng!, sp.locationLat!, sp.locationLng!)
+          }))
+          .sort((a: any, b: any) => a.distKm - b.distKm);
+
+        // append those without GPS coords but matching city text
+        const withoutCoords = specialists
+          .filter((sp: any) => !sp.locationLat || !sp.locationLng)
+          .filter((sp: any) =>
+            location.cityName && sp.location?.toLowerCase().includes(location.cityName.toLowerCase())
+          )
+          .map((sp: any) => ({ ...sp, distKm: undefined }));
+
+        specialistsWithDist = [...specialistsWithDist, ...withoutCoords];
+
+        // If still empty, show all (no location data in DB yet)
+        if (specialistsWithDist.length === 0) {
+          specialistsWithDist = specialists.map((sp: any) => ({ ...sp, distKm: undefined }));
+        }
+      } else {
+        const lower = (location.textAddress || '').toLowerCase();
+        specialistsWithDist = lower
+          ? specialists.filter((sp: any) => sp.location?.toLowerCase().includes(lower))
+                       .map((sp: any) => ({ ...sp, distKm: undefined }))
+          : [];
+        if (specialistsWithDist.length === 0) {
+          specialistsWithDist = specialists.map((sp: any) => ({ ...sp, distKm: undefined }));
+        }
+      }
+
+      const top3 = specialistsWithDist.slice(0, 3);
+      const twaUrl = getTwaUrl(ctx);
+
+      // Use plain text (no Markdown) to avoid parse errors
+      let replyText = `✅ Muammo: ${summary}\n`;
+      replyText += `📂 Toifa: ${matchedCategory.name}\n`;
+      if (location.cityName) replyText += `📍 Hudud: ${location.cityName}\n`;
+      if (location.textAddress) replyText += `📍 Manzil: ${location.textAddress}\n`;
+      if (isUrgent) replyText += `🚨 Shoshilinch!\n`;
+      replyText += `\nSizga eng mos ustalar:\n`;
+
+      const buttons: any[] = [];
+      if (top3.length > 0) {
+        top3.forEach((sp: any, idx: number) => {
+          const rating = sp.rating > 0 ? `${sp.rating}⭐` : 'Yangi';
+          const dist = sp.distKm != null ? ` · ${sp.distKm.toFixed(1)} km` : '';
+          const loc = sp.location ? ` (${sp.location})` : '';
+          replyText += `\n${idx + 1}. ${sp.user?.name || 'Usta'}${loc} — ${rating}${dist}`;
+          const btnText = `👨‍🔧 ${sp.user?.name || 'Usta'} ga murojaat`;
+          const btnUrl = `${twaUrl}?startapp=specialist_${sp.id}`;
+          buttons.push([Markup.button.url(btnText, btnUrl)]);
+        });
+      } else {
+        replyText += `\nAfsuski, bu hududda hozircha mos ustalar topilmadi.\nBoshqa hududdan izlab ko'rishingiz mumkin.`;
+        buttons.push([Markup.button.url('Barcha ustalar 👨‍🔧', twaUrl)]);
+      }
+
+      // Try edit, fall back to fresh reply if it fails
+      try {
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsgId, undefined, replyText, {
+          reply_markup: { inline_keyboard: buttons }
+        });
+      } catch {
+        await ctx.reply(replyText, Markup.inlineKeyboard(buttons));
+      }
+    } catch (err: any) {
+      console.error('findAndSendSpecialists error:', err?.message || err);
+      try {
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsgId, undefined,
+          '❌ Ustalarni qidirishda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
+      } catch {
+        await ctx.reply('❌ Ustalarni qidirishda xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+      }
+    }
   }
 
   // Start bot
