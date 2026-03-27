@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { uploadToCloud } from '../config/cloudinary';
+import logger from '../config/logger';
 
 export const createOrder = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -55,7 +56,8 @@ export const createOrder = async (req: Request, res: Response): Promise<any> => 
     req.io?.emit('new_order', order);
     res.status(201).json({ success: true, data: order });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    logger.error({ err }, 'createOrder error');
+    res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
 
@@ -135,15 +137,44 @@ export const getOrderById = async (req: Request, res: Response): Promise<any> =>
 
 export const updateOrderStatus = async (req: Request, res: Response): Promise<any> => {
   try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'Unauthenticated' });
+
     const { status } = req.body;
     let { specialistId } = req.body;
 
-    // Tender (Umumiy) orderni usta birinchi bo'lib qabul qilganda
-    if (status === 'ACCEPTED' && req.user?.role === 'SPECIALIST' && !specialistId) {
+    // Buyurtmani topib, egasini tekshirish
+    const existing = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, clientId: true, specialistId: true, status: true }
+    });
+    if (!existing) return res.status(404).json({ success: false, message: 'Buyurtma topilmadi' });
+
+    // Usta o'z buyurtmasini qabul qiladigan yoki statusni yangilaydigan
+    if (req.user.role === 'SPECIALIST') {
       const specialist = await prisma.specialist.findUnique({ where: { userId: req.user.id } });
-      if (specialist) {
+      if (!specialist) return res.status(403).json({ success: false, message: 'Usta profili topilmadi' });
+
+      // ACCEPTED va IN_PROGRESS holatlari uchun: faqat o'sha buyurtmaga birikkan usta
+      if (['IN_PROGRESS', 'COMPLETED'].includes(status)) {
+        if (existing.specialistId !== specialist.id) {
+          return res.status(403).json({ success: false, message: 'Bu buyurtmaga ruxsatingiz yo\'q' });
+        }
+      }
+
+      // ACCEPTED: ochiq tender uchun birinchi bo'lib qabul qilish
+      if (status === 'ACCEPTED' && !specialistId) {
         specialistId = specialist.id;
       }
+    } else if (req.user.role === 'CLIENT') {
+      // Mijoz faqat CANCELLED statusini o'z buyurtmasi uchun o'zgartira oladi
+      if (existing.clientId !== req.user.id) {
+        return res.status(403).json({ success: false, message: 'Bu sizning buyurtmangiz emas' });
+      }
+      if (status !== 'CANCELLED') {
+        return res.status(403).json({ success: false, message: 'Mijoz faqat bekor qila oladi' });
+      }
+    } else if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Ruxsat yo\'q' });
     }
 
     const order = await prisma.order.update({
@@ -155,12 +186,31 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<an
     req.io?.to(order.id).emit('order_status_changed', { orderId: order.id, status });
     res.json({ success: true, data: order });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    logger.error({ err }, 'updateOrderStatus error');
+    res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
 
 export const cancelOrder = async (req: Request, res: Response): Promise<any> => {
   try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'Unauthenticated' });
+
+    const existing = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      select: { clientId: true, status: true }
+    });
+    if (!existing) return res.status(404).json({ success: false, message: 'Buyurtma topilmadi' });
+
+    // Faqat egasi (yoki admin) bekor qila oladi
+    if (existing.clientId !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Bu sizning buyurtmangiz emas' });
+    }
+
+    // Allaqachon yakunlangan yoki bekor qilinganlarni o'zgartirish mumkin emas
+    if (['COMPLETED', 'CANCELLED'].includes(existing.status)) {
+      return res.status(400).json({ success: false, message: `Buyurtma "${existing.status}" holatida - bekor qilib bo'lmaydi` });
+    }
+
     const order = await prisma.order.update({
       where: { id: req.params.id },
       data: { status: 'CANCELLED' },
@@ -170,7 +220,8 @@ export const cancelOrder = async (req: Request, res: Response): Promise<any> => 
     req.io?.to(order.id).emit('order_status_changed', { orderId: order.id, status: 'CANCELLED' });
     res.json({ success: true, message: 'Buyurtma bekor qilindi' });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    logger.error({ err }, 'cancelOrder error');
+    res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
 

@@ -29,7 +29,7 @@ export default function OrdersPage() {
   const orders = ordersRes?.data || [];
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || orders.length === 0) return;
     const backendUrl = import.meta.env.VITE_API_URL || '';
     const socket = io(backendUrl, { auth: { token } });
     orders.forEach(o => socket.emit('join_order', o.id));
@@ -38,7 +38,8 @@ export default function OrdersPage() {
       refetch();
     });
     return () => { socket.disconnect(); };
-  }, [token, orders.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   if (isLoading) {
     return (

@@ -136,6 +136,8 @@ model SpecialistAvailability {
   endTime      String
   isBooked     Boolean    @default(false)
   specialist   Specialist @relation(fields: [specialistId], references: [id])
+
+  @@index([specialistId, date])
 }
 
 enum Role {

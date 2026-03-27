@@ -60,7 +60,7 @@ export default function ApplySpecialistPage() {
       }
       fd.append('bio', form.bio);
       fd.append('location', formatLocation(form.region, form.district));
-      if (form.phone.trim()) fd.append('phone', form.phone.trim());
+      if (form.phone.trim()) fd.append('contactPhone', form.phone.trim());
       form.documents.forEach(doc => fd.append('documents', doc));
 
       await applyAsSpecialist(fd).unwrap();

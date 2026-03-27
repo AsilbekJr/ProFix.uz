@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db';
+import logger from '../config/logger';
+
+const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error('JWT_SECRET muhit o\'zgaruvchisi o\'rnatilmagan yoki juda qisqa!');
+  }
+  return secret;
+};
 
 interface JwtPayload {
   id: string;
@@ -16,7 +25,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ success: false, message: 'Token kiritilmagan' });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as JwtPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload;
 
     // Cache dan foydalanuvchi ni olish
     const cached = userCache.get(decoded.id);
@@ -25,12 +34,12 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
       return next();
     }
 
-    // DB dan yangi olish
+    // DB dan yangi olish (password hech qachon client'ga chiqmasligi kerak)
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {
         id: true, name: true, phone: true, telegramId: true,
-        role: true, createdAt: true, updatedAt: true, password: true,
+        role: true, createdAt: true, updatedAt: true,
         specialist: { select: { id: true, isVerified: true, rating: true } }
       }
     });
@@ -43,6 +52,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     req.user = user as any;
     next();
   } catch (err) {
+    logger.warn({ err }, 'Auth token verification failed');
     res.status(401).json({ success: false, message: "Token noto'g'ri yoki muddati o'tgan" });
   }
 };
@@ -57,4 +67,39 @@ export const adminOnly = (req: Request, res: Response, next: NextFunction): any 
     return res.status(403).json({ success: false, message: 'Faqat admin uchun' });
   }
   next();
+};
+
+// ── Optional Auth: Faqat mavjud bo'lsa pars qiladi, aks holda ignore ─────────
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return next();
+
+    const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload;
+    
+    const cached = userCache.get(decoded.id);
+    if (cached && cached.exp > Date.now()) {
+      req.user = cached.user;
+      return next();
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true, name: true, phone: true, telegramId: true,
+        role: true, createdAt: true, updatedAt: true,
+        specialist: { select: { id: true, isVerified: true, rating: true } }
+      }
+    });
+
+    if (user) {
+      userCache.set(decoded.id, { user, exp: Date.now() + CACHE_TTL });
+      req.user = user as any;
+    }
+    
+    next();
+  } catch (err) {
+    // optional, shuning uchun xatoni ignore qilamiz
+    next();
+  }
 };

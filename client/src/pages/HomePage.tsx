@@ -1,14 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { useGetCategoriesQuery } from '../store/apiSlice';
+import { useGetCategoriesQuery, useGetSpecialistsQuery } from '../store/apiSlice';
 import { useTheme } from '../context/ThemeContext';
 import {
   Wrench, Zap, Frame, DoorClosed, Home, Snowflake, Key,
   Droplet, Hammer, Package, ChevronRight, Sun, Moon,
   ClipboardList, Plus, Cpu, Truck, Monitor, TreePine,
   Car, Sofa, Shirt, Flame, Shield, Brush, Wind, Wifi,
-  Camera, Trash2, Bell, Star, MapPin
+  Camera, Trash2, Bell, Star, MapPin, Loader2
 } from 'lucide-react';
 
 function getCategoryIcon(name: string): React.ReactNode {
@@ -219,8 +219,6 @@ export default function HomePage() {
 }
 
 // ── Inline Nearby Specialists Component ──
-import { useGetSpecialistsQuery } from '../store/apiSlice';
-import { Loader2 } from 'lucide-react';
 
 function NearbySpecialistsInline() {
   const navigate = useNavigate();

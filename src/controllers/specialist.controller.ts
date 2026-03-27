@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { clearUserCache } from '../middleware/auth.middleware';
 import { uploadToCloud } from '../config/cloudinary';
+import logger from '../config/logger';
 
 // Update specialist profile (bio, location)
 export const updateSpecialistProfile = async (req: Request, res: Response): Promise<any> => {
@@ -37,6 +38,8 @@ export const updateSpecialistProfile = async (req: Request, res: Response): Prom
 export const getSpecialists = async (req: Request, res: Response): Promise<any> => {
   try {
     const { categoryId, verified, location, district } = req.query;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
 
     // Verified filter
     let isVerifiedFilter: boolean | undefined = true;
@@ -48,39 +51,58 @@ export const getSpecialists = async (req: Request, res: Response): Promise<any> 
       ? { location: { contains: String(district || location), mode: 'insensitive' as const } }
       : {};
 
-    const specialists = await prisma.specialist.findMany({
-      where: {
-        ...(isVerifiedFilter !== undefined && { isVerified: isVerifiedFilter }),
-        ...(categoryId && { services: { some: { categoryId: String(categoryId) } } }),
-        ...locationFilter,
-      },
-      select: {
-        id: true,
-        rating: true,
-        reviewCount: true,
-        location: true,
-        isVerified: true,
-        bio: true,
-        documents: true,
-        user: {
-          select: { id: true, name: true, phone: true }
-        },
-        services: {
-          select: { id: true, price: true, category: { select: { id: true, name: true } } }
-        },
-        _count: {
-          select: {
-            ordersAsSpecialist: { where: { status: 'COMPLETED' } }
+    const whereCLAUSE = {
+      ...(isVerifiedFilter !== undefined && { isVerified: isVerifiedFilter }),
+      ...(categoryId && { services: { some: { categoryId: String(categoryId) } } }),
+      ...locationFilter,
+    };
+
+    const [specialists, total] = await Promise.all([
+      prisma.specialist.findMany({
+        where: whereCLAUSE,
+        select: {
+          id: true,
+          rating: true,
+          reviewCount: true,
+          location: true,
+          isVerified: true,
+          bio: true,
+          documents: true,
+          user: {
+            select: { id: true, name: true, phone: true }
+          },
+          services: {
+            select: { id: true, price: true, category: { select: { id: true, name: true } } }
+          },
+          _count: {
+            select: {
+              ordersAsSpecialist: { where: { status: 'COMPLETED' } }
+            }
           }
-        }
-      },
-      orderBy: { rating: 'desc' },
-      take: 100
+        },
+        orderBy: { rating: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.specialist.count({ where: whereCLAUSE })
+    ]);
+
+    // Ommaviy qidiruvda autentifikatsiya yo'q bo'lsa telefon raqamini yashirish
+    const mappedSpecialists = specialists.map(s => {
+      if (!req.user) {
+         if (s.user) s.user.phone = 'Yashiringan';
+      }
+      return s;
     });
 
-    res.json({ success: true, data: specialists });
+    res.json({ 
+      success: true, 
+      data: mappedSpecialists,
+      meta: { total, page, limit }
+    });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    logger.error({ err }, 'getSpecialists error');
+    res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
 
@@ -130,38 +152,17 @@ export const getSpecialistById = async (req: Request, res: Response): Promise<an
     });
 
     if (!specialist) return res.status(404).json({ success: false, message: 'Usta topilmadi' });
-    res.json({ success: true, data: specialist });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
 
-export const rateSpecialist = async (req: Request, res: Response): Promise<any> => {
-  try {
-    const { rating } = req.body;
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ success: false, message: "Reyting 1-5 oraligida bo'lishi kerak" });
+    if (!req.user && specialist.user) {
+      specialist.user.phone = 'Yashiringan';
     }
 
-    const specialist = await prisma.specialist.findUnique({
-      where: { id: req.params.id },
-      select: { id: true, rating: true }
-    });
-    if (!specialist) return res.status(404).json({ success: false, message: 'Usta topilmadi' });
-
-    const newRating = (specialist.rating + parseFloat(rating)) / 2;
-    const updated = await prisma.specialist.update({
-      where: { id: req.params.id },
-      data: { rating: Number(newRating.toFixed(1)) },
-      select: { id: true, rating: true }
-    });
-
-    res.json({ success: true, data: updated });
+    res.json({ success: true, data: specialist });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    logger.error({ err }, 'getSpecialistById error');
+    res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
-
 
 export const applyAsSpecialist = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -173,7 +174,7 @@ export const applyAsSpecialist = async (req: Request, res: Response): Promise<an
     });
     if (existing) return res.status(400).json({ success: false, message: 'Siz allaqachon usta ariza topshirgansiz' });
 
-    const { bio, location, categoryId, customCategoryName, locationLat, locationLng } = req.body;
+    const { bio, location, categoryId, customCategoryName, locationLat, locationLng, contactPhone } = req.body;
     const files = req.files as Express.Multer.File[];
 
     // Parallel file uploads
@@ -203,9 +204,18 @@ export const applyAsSpecialist = async (req: Request, res: Response): Promise<an
           location: location || null,
           locationLat: locationLat ? parseFloat(locationLat) : null,
           locationLng: locationLng ? parseFloat(locationLng) : null,
-          documents: documentUrls
+          documents: documentUrls,
+          // Kontakt raqamni user'ning asosiy phone'iga yozish (agar boshqasi berilmagan bo'lsa)
         }
       });
+
+      // Agar alohida kontakt raqam berilgan bo'lsa — user profiliga saqlash
+      if (contactPhone?.trim()) {
+        await tx.user.update({
+          where: { id: req.user!.id },
+          data: { phone: contactPhone.trim() }
+        });
+      }
 
       if (finalCategoryId && finalCategoryId !== 'other') {
         await tx.service.create({
@@ -223,7 +233,8 @@ export const applyAsSpecialist = async (req: Request, res: Response): Promise<an
       message: 'Ariza qabul qilindi. Admin tasdiqlashini kuting.'
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    logger.error({ err }, 'applyAsSpecialist error');
+    res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
 

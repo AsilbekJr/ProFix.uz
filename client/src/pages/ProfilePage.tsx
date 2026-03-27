@@ -12,8 +12,8 @@ import {
   Settings, HelpCircle, Bell, Briefcase, 
   ShieldCheck, Loader2
 } from 'lucide-react';
-import { REGIONS, getDistricts } from '../lib/uzbekistan';
 import { formatPhone } from '../lib/utils';
+
 
 export default function ProfilePage() {
   const user = useSelector((state: RootState) => state.auth.user);

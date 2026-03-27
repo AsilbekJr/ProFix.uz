@@ -1,5 +1,41 @@
-node_modules
-# Keep environment variables out of version control
-.env
+node_modules/
 
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Prisma generated
 /generated/prisma
+
+# Logs
+*.log
+logs/
+
+# TypeScript build info
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Temp scripts (root level debug files)
+check_admins.ts
+check_db.ts
+check_orders.ts
+create_admin.ts
+makeAdmin.ts
+seed-specialists.ts
+seed_categories.ts
+test_order.ts
+

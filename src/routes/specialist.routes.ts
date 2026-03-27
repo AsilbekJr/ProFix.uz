@@ -2,27 +2,29 @@ import { Router } from 'express';
 import {
   getSpecialists,
   getSpecialistById,
-  rateSpecialist,
   applyAsSpecialist,
   verifySpecialist,
   unverifySpecialist,
   updateSpecialistProfile
 } from '../controllers/specialist.controller';
-import { protect, adminOnly } from '../middleware/auth.middleware';
-import { upload } from '../middleware/upload.middleware';
+import { protect, adminOnly, optionalAuth } from '../middleware/auth.middleware';
+import { uploadSpecialistDocs } from '../middleware/upload.middleware';
 
 const router = Router();
 
-router.get('/', getSpecialists);
-router.get('/:id', getSpecialistById);
+// Public (optionalAuth orqali telefon raqam yashirilishini boshqaramiz)
+router.get('/', optionalAuth, getSpecialists);
 
+// Protected — /me dan oldin bo'lishi shart (/:id bilan ziddiyat bo'lmasligi uchun)
 router.put('/me', protect, updateSpecialistProfile);
+router.post('/apply', protect, uploadSpecialistDocs, applyAsSpecialist);
 
-router.post('/:id/rate', protect, rateSpecialist);
-router.post('/apply', protect, upload.array('documents', 5), applyAsSpecialist);
+// Public (ID bo'yicha)
+router.get('/:id', optionalAuth, getSpecialistById);
 
 // Admin routes
 router.put('/:id/verify', protect, adminOnly, verifySpecialist);
-router.put('/:id/unverify', protect, adminOnly, unverifySpecialist);   // 🆕 Tasdiqlashni bekor qilish
+router.put('/:id/unverify', protect, adminOnly, unverifySpecialist);
 
 export default router;
+
