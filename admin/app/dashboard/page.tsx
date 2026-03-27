@@ -111,10 +111,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Body Grid: Recent Orders + Pending Specialists */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 28, alignItems: 'start' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 items-start">
 
         {/* Left: Recent Orders */}
-        <div>
+        <div className="lg:col-span-2">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <h2 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Activity size={18} color="var(--primary)" /> So'nggi Buyurtmalar

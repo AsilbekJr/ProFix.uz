@@ -54,7 +54,7 @@ export default function CategoriesPage() {
   return (
     <div style={{ paddingBottom: 60 }}>
       {/* Header */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <FolderTree size={30} color="var(--primary)" /> Xizmat Kategoriyalari
@@ -80,20 +80,10 @@ export default function CategoriesPage() {
       {adding && (
         <form
           onSubmit={handleCreate}
-          style={{
-            background: 'var(--bg-card)',
-            border: '2px solid var(--primary)',
-            borderRadius: 20,
-            padding: '24px',
-            marginBottom: 32,
-            display: 'grid',
-            gridTemplateColumns: '1fr 2fr auto',
-            gap: 20,
-            alignItems: 'end',
-            boxShadow: '0 10px 40px rgba(108,99,255,0.12)',
-          }}
+          className="bg-[var(--bg-card)] border-2 border-[var(--primary)] rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-12 gap-5 items-end"
+          style={{ boxShadow: '0 10px 40px rgba(108,99,255,0.12)' }}
         >
-          <div>
+          <div className="md:col-span-4 lg:col-span-3">
             <label style={S.label}>Ikon (Lucide nomi)</label>
             <input
               value={form.icon}
@@ -102,7 +92,7 @@ export default function CategoriesPage() {
               style={S.input}
             />
           </div>
-          <div>
+          <div className="md:col-span-5 lg:col-span-6">
             <label style={S.label}>Kategoriya nomi</label>
             <input
               value={form.name}
@@ -114,6 +104,7 @@ export default function CategoriesPage() {
           </div>
           <button
             type="submit"
+            className="md:col-span-3 lg:col-span-3"
             style={{
               padding: '12px 28px', borderRadius: 14, fontSize: 14, fontWeight: 800,
               background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer',

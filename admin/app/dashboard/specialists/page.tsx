@@ -78,32 +78,35 @@ export default function SpecialistsPage() {
   return (
     <div style={{ paddingBottom: 60 }}>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <Award size={30} color="var(--primary)" /> Ustalar Boshqaruvi
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Mutaxassislarni tekshirish, tasdiqlash va faoliyatini nazorat qilish</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <Award size={30} color="var(--primary)" /> Ustalar Boshqaruvi
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Mutaxassislarni tekshirish, tasdiqlash va faoliyatini nazorat qilish</p>
+        </div>
       </div>
 
       {/* Toolbar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <div className="flex flex-col lg:flex-row gap-4 mb-6 items-start lg:items-center justify-between" style={{ marginBottom: 24 }}>
+        <div className="flex flex-wrap gap-2">
           <FilterBtn value="all"      label="Barchasi"                                              color="var(--primary)" />
           <FilterBtn value="pending"  label={`⏳ Tasdiq kutayotgan (${all.filter((s: any) => !s.isVerified).length})`} color="var(--warning)" />
           <FilterBtn value="verified" label="✅ Tasdiqlangan"                                        color="var(--success)" />
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ position: 'relative' }}>
+        <div className="flex flex-col md:flex-row w-full lg:w-auto gap-3">
+          <div className="relative w-full md:w-[220px]">
             <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
               placeholder="Ism yoki telefon..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              style={{ ...S.input, width: 220 }}
+              className="w-full"
+              style={S.input}
             />
           </div>
-          <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)} style={{ ...S.select, minWidth: 180 }}>
+          <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)} className="w-full md:w-auto" style={{ ...S.select, minWidth: 180 }}>
             <option value="">📍 Barcha viloyatlar</option>
             {UZ_REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
           </select>

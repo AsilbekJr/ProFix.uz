@@ -69,10 +69,49 @@ export const getAdminUsers = async (req: Request, res: Response): Promise<any> =
 
 export const deleteAdminUser = async (req: Request, res: Response): Promise<any> => {
   try {
-    await prisma.user.delete({ where: { id: req.params.id } });
-    res.json({ success: true, message: "Foydalanuvchi o'chirildi" });
+    const userId = req.params.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { specialist: true, ordersAsClient: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Foydalanuvchi topilmadi" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete specialist profile and its dependencies
+      if (user.specialist) {
+        const sid = user.specialist.id;
+        await tx.portfolio.deleteMany({ where: { specialistId: sid } });
+        await tx.service.deleteMany({ where: { specialistId: sid } });
+        await tx.specialistAvailability.deleteMany({ where: { specialistId: sid } });
+        // Unlink specialist from their orders
+        await tx.order.updateMany({ where: { specialistId: sid }, data: { specialistId: null } });
+        await tx.review.deleteMany({ where: { specialistId: sid } });
+        await tx.specialist.delete({ where: { id: sid } });
+      }
+
+      // 2. Delete orders placed as a client, along with payments and reviews tied to those orders
+      const orderIds = user.ordersAsClient.map(o => o.id);
+      if (orderIds.length > 0) {
+        await tx.payment.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.review.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.order.deleteMany({ where: { clientId: userId } });
+      }
+
+      // 3. Delete any standalone reviews given by this user
+      await tx.review.deleteMany({ where: { clientId: userId } });
+
+      // 4. Finally delete user
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    res.json({ success: true, message: "Foydalanuvchi va tegishli ma'lumotlar o'chirildi" });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Delete user error:", err);
+    res.status(500).json({ success: false, message: "O'chirishda xatolik: " + err.message });
   }
 };
 

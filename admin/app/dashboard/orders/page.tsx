@@ -68,11 +68,13 @@ export default function OrdersPage() {
   return (
     <div style={S.page}>
       {/* ── Header ─────────────────────────────────── */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <ClipboardList size={30} color="var(--primary)" /> Buyurtmalar
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Foydalanuvchilar qoldirgan barcha buyurtmalar va joriy statuslar</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <ClipboardList size={30} color="var(--primary)" /> Buyurtmalar
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Foydalanuvchilar qoldirgan barcha buyurtmalar va joriy statuslar</p>
+        </div>
       </div>
 
       {/* ── Stats row ──────────────────────────────── */}
@@ -91,8 +93,8 @@ export default function OrdersPage() {
       </div>
 
       {/* ── Toolbar ────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+      <div className="flex flex-col md:flex-row gap-3 mb-6" style={{ marginBottom: 24 }}>
+        <div className="relative flex-1 w-full relative">
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
@@ -102,7 +104,7 @@ export default function OrdersPage() {
             style={S.input}
           />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} style={{ ...S.select, minWidth: 180 }}>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="w-full md:w-auto min-w-[180px]" style={S.select}>
           <option value="">Barcha holatlar</option>
           <option value="PENDING">Kutilmoqda</option>
           <option value="ACCEPTED">Qabul qilingan</option>
@@ -194,11 +196,11 @@ export default function OrdersPage() {
       {/* ── Order Detail Drawer ─────────────────────── */}
       {isModalOpen && selectedOrder && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', justifyContent: 'flex-end' }}
+          className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[100] flex justify-end"
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            style={{ width: '100%', maxWidth: 540, height: '100vh', background: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '-20px 0 60px rgba(0,0,0,0.3)' }}
+            className="w-full max-w-[540px] h-screen bg-[var(--bg-card)] border-l border-[var(--border)] flex flex-col overflow-hidden shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             {/* Drawer Header */}

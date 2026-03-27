@@ -4,22 +4,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
       <Sidebar />
-      {/* 
-        On desktop: sidebar is 260px fixed on the left.
-        We push the main content area with a reliable inline marginLeft.
-      */}
+      {/* Dashboard Main Content */}
       <main
         id="dashboard-main"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          marginLeft: '260px',
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'var(--bg)',
-        }}
+        className="flex-1 flex flex-col min-w-0 bg-[var(--bg)]"
+        style={{ marginLeft: '260px' }}
       >
-        {/* Tablet/Mobile override is handled via a <style> tag below */}
         <style>{`
           @media (max-width: 1023px) {
             #dashboard-main {
@@ -27,15 +17,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }
           }
         `}</style>
-        <div
-          style={{
-            flex: 1,
-            padding: '40px 40px',
-            boxSizing: 'border-box',
-          }}
-        >
+        <div className="flex-1 px-4 py-6 md:px-8 md:py-8 lg:px-10 lg:py-10 box-border">
           {/* Mobile top padding — so content doesn't hide under hamburger button */}
-          <div style={{ height: 12 }} className="lg:hidden" />
+          <div className="h-12 lg:hidden" />
           {children}
         </div>
       </main>

@@ -44,7 +44,7 @@ export default function UsersPage() {
   return (
     <div style={{ paddingBottom: 60 }}>
       {/* Header */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 32 }}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <Users size={30} color="var(--primary)" /> Foydalanuvchilar
@@ -57,7 +57,7 @@ export default function UsersPage() {
       </div>
 
       {/* Search */}
-      <div style={{ marginBottom: 20, position: 'relative', maxWidth: 380 }}>
+      <div className="mb-5 relative w-full md:max-w-[380px]" style={{ marginBottom: 24 }}>
         <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
         <input
           type="text"
