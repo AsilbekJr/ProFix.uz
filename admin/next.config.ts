@@ -1,8 +1,5 @@
-import path from 'path';
-
-// @ts-nocheck
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingRoot: path.join(__dirname, './'),
   images: {
     remotePatterns: [
       {
