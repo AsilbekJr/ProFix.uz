@@ -9,7 +9,7 @@ import {
   Droplet, Hammer, Package, ChevronRight, Sun, Moon,
   ClipboardList, Plus, Cpu, Truck, Monitor, TreePine,
   Car, Sofa, Shirt, Flame, Shield, Brush, Wind, Wifi,
-  Camera, Trash2, Star, MapPin, Settings,
+  Camera, Trash2, Star, MapPin, Settings, Search, LocateFixed
 } from 'lucide-react';
 import SpecialistCard from '../components/SpecialistCard';
 
@@ -55,17 +55,17 @@ const CATEGORY_COLORS = [
 
 /* ── Static price preview (will be from admin panel later) ────── */
 const PRICE_PREVIEW = [
-  { icon: '🔧', name: 'Santexnika', from: '50,000' },
-  { icon: '⚡', name: 'Elektrik',   from: '40,000' },
-  { icon: '❄️', name: 'Konditsioner', from: '80,000' },
-  { icon: '🪟', name: 'Deraza',     from: '60,000' },
+  { Icon: Wrench, name: 'Santexnika', from: '50,000' },
+  { Icon: Zap, name: 'Elektrik',   from: '40,000' },
+  { Icon: Snowflake, name: 'Konditsioner', from: '80,000' },
+  { Icon: Frame, name: 'Deraza',     from: '60,000' },
 ];
 
 /* ── Viral 3-step progress ───────────────────────────────────── */
 const VIRAL_STEPS = [
-  { emoji: '📸', label: 'Muammo' },
-  { emoji: '📍', label: 'Manzil' },
-  { emoji: '🔧', label: 'Usta yo\'lda' },
+  { Icon: Camera, label: 'Muammo' },
+  { Icon: LocateFixed, label: 'Manzil' },
+  { Icon: Wrench, label: 'Usta yo\'lda' },
 ];
 
 /* ── Main Page ───────────────────────────────────────────────── */
@@ -120,7 +120,7 @@ export default function HomePage() {
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 2, fontWeight: 500 }}>{greeting}</p>
             <h1 style={{
-              fontFamily: 'Poppins, sans-serif', fontSize: 24, fontWeight: 900,
+              fontFamily: 'Poppins, sans-serif', fontSize: 'clamp(20px, 6vw, 32px)', fontWeight: 900,
               color: 'var(--text)', letterSpacing: '-0.5px', lineHeight: 1.2
             }}>
               {firstName} 👋
@@ -150,7 +150,7 @@ export default function HomePage() {
             className="btn one-click-btn"
             onClick={() => navigate('/order/create')}
             style={{
-              marginTop: 20, height: 62, borderRadius: 20, fontSize: 16,
+              marginTop: 20, height: 'clamp(56px, 10vw, 70px)', borderRadius: 20, fontSize: 'clamp(14px, 4vw, 18px)',
               fontWeight: 800, width: '100%',
               background: 'var(--gradient-brand)',
               color: '#fff',
@@ -159,7 +159,7 @@ export default function HomePage() {
               gap: 12,
             }}
           >
-            <span style={{ fontSize: 24 }}>📍</span>
+            <MapPin size={24} strokeWidth={2.5} style={{ fill: 'rgba(255,255,255,0.2)' }} />
             <span>Manzilni yuborish va usta chaqirish</span>
           </button>
 
@@ -193,10 +193,10 @@ export default function HomePage() {
                   background: i === 0 ? 'var(--primary)' : i === 1 ? 'var(--bg-card2)' : 'var(--bg-card2)',
                   color: i === 0 ? '#fff' : 'var(--text-sub)',
                   boxShadow: i === 0 ? '0 0 0 4px var(--primary-glow)' : 'none',
-                  fontSize: 18,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}
               >
-                {step.emoji}
+                <step.Icon size={18} strokeWidth={2.5} />
               </div>
               <span style={{
                 fontSize: 10, fontWeight: 700, color: i === 0 ? 'var(--primary)' : 'var(--text-sub)',
@@ -220,7 +220,7 @@ export default function HomePage() {
                 borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6,
                 animation: `priceSlide 0.3s ease ${i * 80}ms both`,
               }}>
-                <span style={{ fontSize: 16 }}>{p.icon}</span>
+                <span style={{ color: 'var(--primary)', flexShrink: 0 }}><p.Icon size={18} strokeWidth={2.5} /></span>
                 <div>
                   <p style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 600 }}>{p.name}</p>
                   <p style={{ fontSize: 12, color: 'var(--text)', fontWeight: 800 }}>
@@ -235,7 +235,7 @@ export default function HomePage() {
                 borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6,
                 cursor: 'pointer',
               }}
-              onClick={() => navigate('/order/create')}
+              onClick={() => document.getElementById('categories-section')?.scrollIntoView({ behavior: 'smooth' })}
               role="button"
             >
               <span style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700 }}>Barchasi →</span>
@@ -245,10 +245,10 @@ export default function HomePage() {
       </div>
 
       {/* ── SERVICES GRID ─────────────────────────────────────── */}
-      <div style={{ padding: '20px 20px 8px' }}>
+      <div id="categories-section" style={{ padding: '20px 20px 8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <h2 style={{
-            fontFamily: 'Poppins, sans-serif', fontSize: 17, fontWeight: 800,
+            fontFamily: 'Poppins, sans-serif', fontSize: 'clamp(16px, 4.5vw, 22px)', fontWeight: 800,
             color: 'var(--text)', letterSpacing: '-0.3px',
           }}>
             Xizmatlar
@@ -337,7 +337,7 @@ export default function HomePage() {
       <div style={{ padding: '8px 20px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <h2 style={{
-            fontFamily: 'Poppins, sans-serif', fontSize: 17, fontWeight: 800,
+            fontFamily: 'Poppins, sans-serif', fontSize: 'clamp(16px, 4.5vw, 22px)', fontWeight: 800,
             color: 'var(--text)', letterSpacing: '-0.3px'
           }}>
             Top Ustalar
@@ -348,7 +348,7 @@ export default function HomePage() {
               fontSize: 12, fontWeight: 700, color: 'var(--primary)',
               display: 'flex', alignItems: 'center', gap: 4,
             }}
-            onClick={() => navigate('/order/create')}
+            onClick={() => document.getElementById('categories-section')?.scrollIntoView({ behavior: 'smooth' })}
           >
             Hammasi <ChevronRight size={14} />
           </button>
@@ -402,7 +402,9 @@ function TopSpecialistsSection() {
         background: 'var(--bg-card)', borderRadius: 20,
         border: '1px dashed var(--border)',
       }}>
-        <p style={{ fontSize: 32, marginBottom: 8 }}>🔍</p>
+        <p style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: 'var(--text-sub)' }}>
+          <Search size={36} strokeWidth={1.5} />
+        </p>
         <p style={{ color: 'var(--text-sub)', fontSize: 14 }}>Hozircha ustalar topilmadi</p>
         <button
           className="btn btn-primary"

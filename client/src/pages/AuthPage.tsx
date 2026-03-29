@@ -151,7 +151,7 @@ export default function AuthPage() {
             />
           </div>
           <h1 style={{
-            fontFamily: 'Poppins, sans-serif', fontSize: 32, fontWeight: 800,
+            fontFamily: 'Poppins, sans-serif', fontSize: 'clamp(24px, 6vw, 36px)', fontWeight: 800,
             color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 8,
             transition: 'color 0.3s ease'
           }}>
@@ -307,7 +307,7 @@ export default function AuthPage() {
               type="submit"
               disabled={loading}
               className="btn btn-gradient"
-              style={{ marginTop: 8, height: 52, fontSize: 16, borderRadius: 16 }}
+              style={{ marginTop: 8, height: 'clamp(48px, 8vw, 56px)', fontSize: 'clamp(15px, 4vw, 18px)', borderRadius: 16 }}
             >
               {loading
                 ? <Loader2 size={22} className="animate-spin" />
