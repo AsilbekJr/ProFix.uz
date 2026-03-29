@@ -90,17 +90,16 @@ export const setupBot = () => {
     const dbUser = await prisma.user.findUnique({ where: { telegramId } });
 
     if (!dbUser) {
-      // Yangi foydalanuvchi — raqam so'raymiz
-      if (refCode) {
-        sessions.set(ctx.from.id, { parsedRequest: {} as any, step: 'waiting_contact', refCode });
-      }
+      // Yozishma holati: raqam kutish
+      sessions.set(ctx.from.id, { parsedRequest: {} as any, step: 'waiting_contact', refCode });
+      
       await ctx.reply(
-        `Assalomu alaykum, *${ctx.from.first_name}*! 👋\n\n` +
-        `🔧 *ProFix.uz* — yaqinidagi ustani 15 daqiqada topamiz!\n\n` +
+        `Assalomu alaykum, <b>${ctx.from.first_name}</b>! 👋\n\n` +
+        `🛠 <b>ProFix.uz</b> — o'z ishingizning ustalarini 15 daqiqada topamiz!\n\n` +
         (refCode ? `🎁 Do'stingiz taklif qildi — birinchi buyurtmada bonus!\n\n` : '') +
         `Davom etish uchun telefon raqamingizni ulashing 👇`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...Markup.keyboard([
             [Markup.button.contactRequest('📱 Telefon raqamni ulashish')]
           ]).resize().oneTime()
@@ -111,21 +110,111 @@ export const setupBot = () => {
 
     // Mavjud foydalanuvchi — asosiy menyu
     const referralCode = await ensureReferralCode(dbUser.id);
+    const twaUrl = getTwaUrl(ctx);
     const botUsername = ctx.botInfo?.username || 'pro_fix_uz_bot';
-    const twaUrl = process.env.VITE_CLIENT_URL || `https://t.me/${botUsername}/app`;
     const refLink = `https://t.me/${botUsername}?start=ref_${referralCode}`;
 
     await ctx.reply(
-      `Xush kelibsiz, *${ctx.from.first_name}*! 👋\n\n` +
-      `📍 Usta chaqirish uchun ilovani oching\n\n` +
-      `🎁 *Do'stingizni taklif qiling:*\n\`${refLink}\`\n` +
-      `_(Do'stingiz buyurtma bersa — 10% chegirma!)_`,
+      `Xush kelibsiz, <b>${ctx.from.first_name}</b>! 👋\n\n` +
+      `Nima muammo bo'lyapti sizda? Yozing <i>(Masalan: suvim oqyapti, chiroq o'chdi...)</i> yoki rasm yuboring.\n\n` +
+      `📱 Yoki to'g'ridan to'g'ri ilovaga o'ting👇`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
-          [Markup.button.url('📍 Usta chaqirish', twaUrl)],
-          [Markup.button.callback('🔗 Mening havolam', 'my_referral')],
-          [Markup.button.callback('📋 Buyurtmalarim', 'my_orders')],
+          [Markup.button.url('📍 Usta chaqirish (Mini Ilova)', twaUrl)],
+          [Markup.button.callback('🔗 Mening havolam', `my_referral_${referralCode}`), Markup.button.callback('📋 Buyurtmalarim', 'my_orders')]
+        ])
+      }
+    );
+  });
+
+  // ── Contact Handling ───────────────────────────────────────────────────────
+  bot.on('contact', async (ctx) => {
+    const contact = ctx.message.contact;
+    const telegramId = String(ctx.from.id);
+    
+    // Check if user is sharing their own number
+    if (contact.user_id && contact.user_id !== ctx.from.id) {
+       return ctx.reply("❌ Iltimos, o'zingizning raqamingizni yuboring!");
+    }
+
+    let phone = contact.phone_number;
+    if (!phone.startsWith('+')) phone = '+' + phone;
+
+    const session = sessions.get(ctx.from.id);
+    const refCode = session?.refCode;
+
+    try {
+      const twaUrl = getTwaUrl(ctx);
+      let dbUser = await prisma.user.findFirst({ where: { phone } });
+      
+      if (!dbUser) {
+         dbUser = await prisma.user.create({
+            data: {
+               phone,
+               name: ctx.from.first_name,
+               telegramId,
+               role: 'CLIENT',
+               // Additional fields like referring user mapping can be added here
+            }
+         });
+      } else {
+         dbUser = await prisma.user.update({
+            where: { id: dbUser.id },
+            data: { telegramId, name: ctx.from.first_name }
+         });
+      }
+      
+      sessions.delete(ctx.from.id);
+      
+      const referralCode = await ensureReferralCode(dbUser.id);
+
+      await ctx.reply("✅ <b>Ajoyib! Ro'yxatdan o'tdingiz.</b>", {
+        parse_mode: 'HTML',
+        ...Markup.removeKeyboard()
+      });
+
+      await ctx.reply(
+        `Nima muammo bo'lyapti sizda? Yozing <i>(Masalan: suvim oqyapti, chiroq o'chdi...)</i> yoki rasm yuboring.\n\n` +
+        `📱 Yoki to'g'ridan to'g'ri ilovaga o'ting👇`,
+        {
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard([
+            [Markup.button.url('📍 Usta chaqirish (Mini Ilova)', twaUrl)],
+            [Markup.button.callback('🔗 Mening havolam', `my_referral_${referralCode}`), Markup.button.callback('📋 Buyurtmalarim', 'my_orders')]
+          ])
+        }
+      );
+    } catch (e) {
+      console.error('Contact error:', e);
+      ctx.reply("❌ Xatolik yuz berdi. Iltimos, raqamni qayta yuboring.");
+    }
+  });
+
+  // ── Missing Actions ────────────────────────────────────────────────────────
+  bot.action(/^my_referral_(.+)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+    const refCode = ctx.match[1];
+    const botUsername = ctx.botInfo?.username || 'pro_fix_uz_bot';
+    const refLink = `https://t.me/${botUsername}?start=ref_${refCode}`;
+    
+    await ctx.reply(
+      `🎁 <b>Sizning taklif havolangiz:</b>\n` +
+      `<code>${refLink}</code>\n\n` +
+      `👉 Do'stlaringizga yuboring va bonuslarga ega bo'ling!`,
+      { parse_mode: 'HTML' }
+    );
+  });
+
+  bot.action('my_orders', async (ctx) => {
+    await ctx.answerCbQuery();
+    const twaUrl = getTwaUrl(ctx);
+    await ctx.reply(
+      "📋 Barcha buyurtmalaringizni to'liq ro'yxatini ko'rish uchun <b>Mini Ilovaning 'Buyurtmalar' bo'limiga</b> o'ting:",
+      {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([
+          [Markup.button.url("Mening buyurtmalarim", `${twaUrl}?startapp=orders`)]
         ])
       }
     );
@@ -137,13 +226,21 @@ export const setupBot = () => {
     const userId = ctx.from.id;
     sessions.set(userId, { parsedRequest, step: 'waiting_location' });
 
-    const { summary, categoryName } = parsedRequest;
+    const { summary, categoryName, isUrgent } = parsedRequest;
     await ctx.reply(
-      `✅ Tushundim!\n📋 **Muammo:** ${summary}\n📂 **Toifa:** ${categoryName}\n\n📍 Endi sizga eng yaqin ustani topish uchun manzilingiz kerak.\n\nQuyidagilardan birini tanlang:`,
-      Markup.inlineKeyboard([
-        [Markup.button.callback('📍 GPS Lokatsiyamni ulashish', 'share_location')],
-        [Markup.button.callback('✏️ Qo\'lda yozaman', 'manual_address')]
-      ])
+      `✅ <b>Tushundim!</b>\n\n` +
+      `📋 <b>Muammo:</b> ${summary}\n` +
+      `📂 <b>Toifa:</b> ${categoryName}\n` +
+      `${isUrgent ? '🚨 <b>Holat:</b> Shoshilinch!' : ''}\n\n` +
+      `📍 <b>Sizga eng yaqin ustani qidirish...</b>\n\n` +
+      `Quyidagilardan manzilni tanlang:`,
+      {
+         parse_mode: 'HTML',
+         ...Markup.inlineKeyboard([
+           [Markup.button.callback('📍 GPS Lokatsiyamni ulashish', 'share_location')],
+           [Markup.button.callback('✏️ Qo\'lda yozaman', 'manual_address')]
+         ])
+      }
     );
   }
 
@@ -151,10 +248,13 @@ export const setupBot = () => {
   bot.action('share_location', async (ctx) => {
     await ctx.answerCbQuery();
     await ctx.reply(
-      '📍 Iltimos, **pastdagi tugma** orqali joylashuvingizni yuboring:',
-      Markup.keyboard([
-        [Markup.button.locationRequest('📍 Joylashuvimni yuborish')]
-      ]).resize().oneTime()
+      '📍 Iltimos, <b>pastdagi tugma</b> orqali joylashuvingizni yuboring:',
+      {
+        parse_mode: 'HTML',
+        ...Markup.keyboard([
+          [Markup.button.locationRequest('📍 Joylashuvimni yuborish')]
+        ]).resize().oneTime()
+      }
     );
   });
 
@@ -162,8 +262,8 @@ export const setupBot = () => {
   bot.action('manual_address', async (ctx) => {
     await ctx.answerCbQuery();
     await ctx.reply(
-      '✏️ Manzilingizni yozing (Masalan: **Toshkent, Yunusobod tumani**):',
-      Markup.removeKeyboard()
+      "✏️ Manzilingizni yozing <i>(Masalan: Toshkent, Yunusobod tumani...)</i>:",
+      { parse_mode: 'HTML', ...Markup.removeKeyboard() }
     );
   });
 
@@ -189,7 +289,8 @@ export const setupBot = () => {
   // ── Photos ────────────────────────────────────────────────────────────────
   bot.on('photo', async (ctx) => {
     try {
-      const waitMsg = await ctx.reply('⏳ Rasmni tahlil qilyapman...');
+      ctx.sendChatAction('typing');
+      const waitMsg = await ctx.reply('⏳ Rasmni tahlil qilyapman... Bu biroz vaqt olishi mumkin ⚡️');
       const photos = ctx.message.photo;
       // Pick medium size photo (index 1 or last-1, ~300KB) instead of highest resolution (3-5MB)
       const photo = photos.length > 2 ? photos[photos.length - 2] : photos[photos.length - 1];
@@ -207,13 +308,12 @@ export const setupBot = () => {
         };
         sessions.set(ctx.from.id, { parsedRequest: fallback, step: 'waiting_location' });
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined,
-          `✅ Rasmni qabul qildim! 
-📋 **Muammo:** ${fallback.summary}
-
-📍 Endi sizga eng yaqin ustani topish uchun manzilingiz kerak.
-Quyidagilardan birini tanlang:`,
+          `✅ Rasmni qabul qildim!\n\n` +
+          `📋 <b>Muammo:</b> ${fallback.summary}\n\n` +
+          `📍 Endi sizga eng yaqin ustani topish uchun manzilingiz kerak.\n` +
+          `Quyidagilardan birini tanlang:`,
           {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: {
               inline_keyboard: [
                 [{ text: '📍 GPS Lokatsiyamni ulashish', callback_data: 'share_location' }],
@@ -228,7 +328,7 @@ Quyidagilardan birini tanlang:`,
       await askForLocation(ctx, parsedRequest);
     } catch (err) {
       console.error(err);
-      ctx.reply("Kechirasiz, rasmni o'qishda xatolik. Muammoingizni matnda yozing.");
+      ctx.reply("❌ Kechirasiz, rasmni o'qishda xatolik! Muammoingizni matnda yozib yuboring.");
     }
   });
 
@@ -243,24 +343,33 @@ Quyidagilardan birini tanlang:`,
     // If waiting for manual address, perform search with text address
     if (session && session.step === 'waiting_location') {
       sessions.delete(userId);
-      const waitMsg = await ctx.reply(`⏳ "${text}" hududida ustalar qidirilmoqda...`);
+      const waitMsg = await ctx.reply(`🔍 <b>"${text}"</b> doirasida ustalar qidirilmoqda...`, { parse_mode: 'HTML' });
+      ctx.sendChatAction('find_location');
       await findAndSendSpecialists(ctx, session.parsedRequest, { textAddress: text }, waitMsg.message_id);
       return;
     }
 
+    // Checking if phone registration is missing logic
+    if (session && session.step === 'waiting_contact') {
+       return ctx.reply("Iltimos, avval raqamingizni ulashing 📱", Markup.keyboard([
+         [Markup.button.contactRequest('📱 Telefon raqamni ulashish')]
+       ]).resize().oneTime());
+    }
+
     // Otherwise, treat as new problem description
     try {
-      const waitMsg = await ctx.reply('⏳ Xabaringizni tahlil qilyapman...');
+      ctx.sendChatAction('typing');
+      const waitMsg = await ctx.reply('🤖 <b>Aqlli yordamchi</b> murojaatni o\'rganib chiqmoqda...', { parse_mode: 'HTML' });
       const parsedRequest = await analyzeTextWithAI(text);
       if (!parsedRequest) {
         return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined,
-          "Tushuna olmadim. Muammoingizni boshqacharoq yozing.");
+          "Tushuna olmadim 😕. Muammoingizni aniqroq yozib yuboring.");
       }
       await ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id);
       await askForLocation(ctx, parsedRequest);
     } catch (err) {
       console.error(err);
-      ctx.reply('Kechirasiz, xabarni tahlil qilishda xatolik yuz berdi 😟.');
+      ctx.reply('❌ Kechirasiz, xabarni tahlil qilishda xatolik yuz berdi 😟.');
     }
   });
 
@@ -284,7 +393,7 @@ Quyidagilardan birini tanlang:`,
         ) || categories[0];
 
       if (!matchedCategory) {
-        await ctx.reply('Afsuski, bu toifada ustalar topilmadi.');
+        await ctx.reply('❌ Afsuski, bu toifada ustalar topilmadi.');
         return;
       }
 
@@ -338,37 +447,46 @@ Quyidagilardan birini tanlang:`,
       const top3 = specialistsWithDist.slice(0, 3);
       const twaUrl = getTwaUrl(ctx);
 
-      // Use plain text (no Markdown) to avoid parse errors
-      let replyText = `✅ Muammo: ${summary}\n`;
-      replyText += `📂 Toifa: ${matchedCategory.name}\n`;
-      if (location.cityName) replyText += `📍 Hudud: ${location.cityName}\n`;
-      if (location.textAddress) replyText += `📍 Manzil: ${location.textAddress}\n`;
-      if (isUrgent) replyText += `🚨 Shoshilinch!\n`;
-      replyText += `\nSizga eng mos ustalar:\n`;
+      // Use HTML for beautiful replies
+      let replyText = `✅ <b>Buyurtma tayyor:</b>\n\n`;
+      replyText += `📝 <b>Muammo:</b> ${summary}\n`;
+      replyText += `📂 <b>Toifa:</b> ${matchedCategory.name}\n`;
+      if (location.cityName) replyText += `📍 <b>Hudud:</b> ${location.cityName}\n`;
+      if (location.textAddress) replyText += `📍 <b>Manzil:</b> ${location.textAddress}\n`;
+      if (isUrgent) replyText += `🚨 <b>Holat: Shoshilinch!</b>\n`;
+      replyText += `\n👨‍🔧 <b>Sizga eng mos ustalar:</b>\n`;
 
       const buttons: any[] = [];
       if (top3.length > 0) {
         top3.forEach((sp: any, idx: number) => {
-          const rating = sp.rating > 0 ? `${sp.rating}⭐` : 'Yangi';
+          const rating = sp.rating > 0 ? `${sp.rating.toFixed(1)}⭐️` : 'Yangi';
           const dist = sp.distKm != null ? ` · ${sp.distKm.toFixed(1)} km` : '';
           const loc = sp.location ? ` (${sp.location})` : '';
-          replyText += `\n${idx + 1}. ${sp.user?.name || 'Usta'}${loc} — ${rating}${dist}`;
-          const btnText = `👨‍🔧 ${sp.user?.name || 'Usta'} ga murojaat`;
+          replyText += `\n<b>${idx + 1}. ${sp.user?.name || 'Usta'}</b>\n`;
+          replyText += `  └ ${rating}${dist}${loc}\n`;
+          
+          const btnText = `👨‍🔧 ${sp.user?.name || 'Usta'} ni tanlash`;
           const btnUrl = `${twaUrl}?startapp=specialist_${sp.id}`;
           buttons.push([Markup.button.url(btnText, btnUrl)]);
         });
+        
+        buttons.push([Markup.button.url('↗️ Ilovada davom etish', twaUrl)]);
       } else {
-        replyText += `\nAfsuski, bu hududda hozircha mos ustalar topilmadi.\nBoshqa hududdan izlab ko'rishingiz mumkin yoki tegishli ustalarga ariza qoldiring:`;
+        replyText += `\nAfsuski, bu hududda hozircha mos ustalar topilmadi 😔.\nBoshqa hududdan izlab ko'rishingiz mumkin yoki tegishli ustalarga ariza qoldiring:`;
         buttons.push([Markup.button.url('📝 Ariza qoldirish', `${twaUrl}?startapp=create_order`)]);
       }
 
       // Try edit, fall back to fresh reply if it fails
       try {
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsgId, undefined, replyText, {
+          parse_mode: 'HTML',
           reply_markup: { inline_keyboard: buttons }
         });
       } catch {
-        await ctx.reply(replyText, Markup.inlineKeyboard(buttons));
+        await ctx.reply(replyText, {
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard(buttons)
+        });
       }
     } catch (err: any) {
       console.error('findAndSendSpecialists error:', err?.message || err);
