@@ -1,10 +1,21 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { ApiResponse, User, Order, Category, Specialist, DashboardStats, PriceItem } from '@/types';
 
+const getBaseUrl = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  if (!url.startsWith('http')) {
+    url = `https://${url}`;
+  }
+  if (!url.endsWith('/api') && !url.includes('/api/')) {
+    url = url.replace(/\/$/, '') + '/api';
+  }
+  return url;
+};
+
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    baseUrl: getBaseUrl(),
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
       if (token) headers.set('Authorization', `Bearer ${token}`);
