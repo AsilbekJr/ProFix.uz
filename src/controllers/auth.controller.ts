@@ -15,21 +15,50 @@ const getJwtSecret = (): string => {
 const generateToken = (id: string) =>
   jwt.sign({ id }, getJwtSecret(), { expiresIn: '30d' });
 
+// ── Referral kodi generatsiya ────────────────────────────────────────────────
+function generateReferralCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
 export const register = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { phone, name, password } = req.body;
+    const { phone, name, password, refCode } = req.body;
 
     if (!phone) return res.status(400).json({ success: false, message: 'Telefon raqam kiritilishi shart' });
     if (!name?.trim()) return res.status(400).json({ success: false, message: 'Ism kiritilishi shart' });
-    if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'Parol kamida 6 belgi bo\'lishi kerak' });
+    if (!password || password.length < 6) return res.status(400).json({ success: false, message: "Parol kamida 6 belgi bo'lishi kerak" });
 
     const existing = await prisma.user.findUnique({ where: { phone } });
-    if (existing) return res.status(400).json({ success: false, message: 'Bu raqam allaqachon ro\'yxatdan o\'tgan' });
+    if (existing) return res.status(400).json({ success: false, message: "Bu raqam allaqachon ro'yxatdan o'tgan" });
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Unique referral kodi yaratamiz
+    let referralCode: string;
+    let codeExists = true;
+    do {
+      referralCode = generateReferralCode();
+      const check = await prisma.user.findUnique({ where: { referralCode } });
+      codeExists = !!check;
+    } while (codeExists);
+
+    // Referral orqali kelganini tekshiramiz
+    let referredBy: string | undefined;
+    if (refCode) {
+      const referrer = await prisma.user.findFirst({ where: { referralCode: refCode.toUpperCase() } });
+      if (referrer) {
+        referredBy = refCode.toUpperCase();
+        // Referrer'ga bonus qo'shamiz
+        await prisma.user.update({
+          where: { id: referrer.id },
+          data: { bonusBalance: { increment: 10 } },
+        });
+      }
+    }
+
     const { password: _, ...user } = await prisma.user.create({
-      data: { phone, name: name.trim(), password: hashedPassword }
+      data: { phone, name: name.trim(), password: hashedPassword, referralCode, referredBy }
     });
 
     res.status(201).json({ success: true, token: generateToken(user.id), user });
@@ -38,6 +67,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
+
 
 export const login = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -71,13 +101,47 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
 export const telegramAuth = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { telegramId, name } = req.body;
+    const { telegramId, name, refCode } = req.body;
     if (!telegramId) return res.status(400).json({ success: false, message: 'Telegram ID kiritilishi shart' });
 
     let user = await prisma.user.findUnique({ where: { telegramId: String(telegramId) } });
 
     if (!user) {
-      user = await prisma.user.create({ data: { telegramId: String(telegramId), name } });
+      // Unique referral kodi yaratamiz
+      let referralCode: string;
+      let codeExists = true;
+      do {
+        referralCode = generateReferralCode();
+        const check = await prisma.user.findUnique({ where: { referralCode } });
+        codeExists = !!check;
+      } while (codeExists);
+
+      // Referral orqali kelganini tekshiramiz
+      let referredBy: string | undefined;
+      if (refCode) {
+        const referrer = await prisma.user.findFirst({ where: { referralCode: String(refCode).toUpperCase() } });
+        if (referrer && referrer.telegramId !== String(telegramId)) {
+          referredBy = String(refCode).toUpperCase();
+          await prisma.user.update({
+            where: { id: referrer.id },
+            data: { bonusBalance: { increment: 10 } },
+          });
+        }
+      }
+
+      user = await prisma.user.create({
+        data: { telegramId: String(telegramId), name, referralCode, referredBy }
+      });
+    } else if (!user.referralCode) {
+      // Eski foydalanuvchiga ham referral kodi yaratamiz
+      let referralCode: string;
+      let codeExists = true;
+      do {
+        referralCode = generateReferralCode();
+        const check = await prisma.user.findUnique({ where: { referralCode } });
+        codeExists = !!check;
+      } while (codeExists);
+      user = await prisma.user.update({ where: { id: user.id }, data: { referralCode } });
     }
 
     const { password: _, ...safeUser } = user;
@@ -87,3 +151,4 @@ export const telegramAuth = async (req: Request, res: Response): Promise<any> =>
     res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 };
+

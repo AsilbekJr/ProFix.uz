@@ -16,6 +16,8 @@ import specialistRoutes from './routes/specialist.routes';
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
 import reviewRoutes from './routes/review.routes';
+import referralRoutes from './routes/referral.routes';
+import pricingRoutes from './routes/pricing.routes';
 import { setupBot } from './bot';
 
 dotenv.config();
@@ -44,6 +46,8 @@ const corsOptions = {
   origin: (origin: string | undefined, callback: Function) => {
     // Server-side so'rovlar (curl, postman dev'da)
     if (!origin && isDev) return callback(null, true);
+    // Dev muhitda barcha localhost portlariga ruxsat
+    if (isDev && origin && /^http:\/\/localhost:\d+$/.test(origin)) return callback(null, true);
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error(`CORS: "${origin}" domeniga ruxsat yo'q`));
   },
@@ -138,6 +142,9 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/specialists', specialistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/pricing', pricingRoutes);
+
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

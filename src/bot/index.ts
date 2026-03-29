@@ -10,9 +10,11 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 // ── In-memory session to store pending requests per user ─────────────────────
 interface UserSession {
   parsedRequest: ParsedRequest;
-  step: 'waiting_location';
+  step: 'waiting_location' | 'waiting_contact';
+  refCode?: string;
 }
 const sessions = new Map<number, UserSession>();
+
 
 // ── Haversine distance (km) ───────────────────────────────────────────────────
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -62,17 +64,73 @@ export const setupBot = () => {
     return process.env.VITE_CLIENT_URL || `https://t.me/${botUsername}/app`;
   };
 
-  // ── /start ────────────────────────────────────────────────────────────────
-  bot.start((ctx) => {
-    // Clear any pending session so next message is treated as a fresh problem
+  // ── Helper: ensure referral code ────────────────────────────────────────────
+  async function ensureReferralCode(userId: string): Promise<string> {
+    const u = await prisma.user.findUnique({ where: { id: userId } });
+    if (u?.referralCode) return u.referralCode;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    let exists = true;
+    while (exists) {
+      code = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      exists = !!(await prisma.user.findUnique({ where: { referralCode: code } }));
+    }
+    await prisma.user.update({ where: { id: userId }, data: { referralCode: code } });
+    return code;
+  }
+
+  // ── /start ───────────────────────────────────────────────────────────────
+  bot.start(async (ctx) => {
     sessions.delete(ctx.from.id);
-    ctx.reply(
-      `Assalomu alaykum, ${ctx.from.first_name}! 👋\n\nMen **ProFix.uz** aqlli yordamchisiman.\n\n📝 Muammoingizni yozing yoki 📷 buzilgan narsaning rasmini yuboring — men siz yaqinidagi eng yaxshi ustani topib beraman!`,
-      Markup.inlineKeyboard([
-        Markup.button.url('Ilovani ochish 📱', getTwaUrl(ctx))
-      ])
+
+    const payload = (ctx as any).startPayload as string | undefined;
+    const refCode = payload?.startsWith('ref_') ? payload.slice(4).toUpperCase() : undefined;
+
+    const telegramId = String(ctx.from.id);
+    const dbUser = await prisma.user.findUnique({ where: { telegramId } });
+
+    if (!dbUser) {
+      // Yangi foydalanuvchi — raqam so'raymiz
+      if (refCode) {
+        sessions.set(ctx.from.id, { parsedRequest: {} as any, step: 'waiting_contact', refCode });
+      }
+      await ctx.reply(
+        `Assalomu alaykum, *${ctx.from.first_name}*! 👋\n\n` +
+        `🔧 *ProFix.uz* — yaqinidagi ustani 15 daqiqada topamiz!\n\n` +
+        (refCode ? `🎁 Do'stingiz taklif qildi — birinchi buyurtmada bonus!\n\n` : '') +
+        `Davom etish uchun telefon raqamingizni ulashing 👇`,
+        {
+          parse_mode: 'Markdown',
+          ...Markup.keyboard([
+            [Markup.button.contactRequest('📱 Telefon raqamni ulashish')]
+          ]).resize().oneTime()
+        }
+      );
+      return;
+    }
+
+    // Mavjud foydalanuvchi — asosiy menyu
+    const referralCode = await ensureReferralCode(dbUser.id);
+    const botUsername = ctx.botInfo?.username || 'pro_fix_uz_bot';
+    const twaUrl = process.env.VITE_CLIENT_URL || `https://t.me/${botUsername}/app`;
+    const refLink = `https://t.me/${botUsername}?start=ref_${referralCode}`;
+
+    await ctx.reply(
+      `Xush kelibsiz, *${ctx.from.first_name}*! 👋\n\n` +
+      `📍 Usta chaqirish uchun ilovani oching\n\n` +
+      `🎁 *Do'stingizni taklif qiling:*\n\`${refLink}\`\n` +
+      `_(Do'stingiz buyurtma bersa — 10% chegirma!)_`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.url('📍 Usta chaqirish', twaUrl)],
+          [Markup.button.callback('🔗 Mening havolam', 'my_referral')],
+          [Markup.button.callback('📋 Buyurtmalarim', 'my_orders')],
+        ])
+      }
     );
   });
+
 
   // ── Helper: Ask for location after AI analysis ────────────────────────────
   async function askForLocation(ctx: any, parsedRequest: ParsedRequest) {

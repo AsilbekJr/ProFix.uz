@@ -114,8 +114,26 @@ export const api = createApi({
       query: (specialistId) => `/reviews/specialist/${specialistId}`,
       providesTags: ['Review'],
     }),
+
+    // ── REFERRAL ──────────────────────────────────────────
+    getMyReferralLink: builder.query<ApiResponse<{
+      referralCode: string;
+      referralLink: string;
+      telegramLink: string;
+      referredCount: number;
+      bonusBalance: number;
+      bonusPercent: number;
+    }>, void>({
+      query: () => '/referral/my-link',
+      providesTags: ['User'],
+    }),
+    applyReferralCode: builder.mutation<ApiResponse<null>, { code: string }>({
+      query: (body) => ({ url: '/referral/use', method: 'POST', body }),
+      invalidatesTags: ['User'],
+    }),
   }),
 });
+
 
 export const {
   useRegisterOrLoginMutation,
@@ -137,4 +155,8 @@ export const {
   useApplyAsSpecialistMutation,
   useCreateReviewMutation,
   useGetSpecialistReviewsQuery,
+  useGetMyReferralLinkQuery,
+  useApplyReferralCodeMutation,
 } = api;
+
+

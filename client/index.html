@@ -1,15 +1,77 @@
 <!doctype html>
-<html lang="en">
+<html lang="uz">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
-    <!-- Telegram Web App SDK -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- ══ PRIMARY SEO ══ -->
+    <title>ProFix.uz — Toshkentda ta'mir ustalari | Santexnik, Elektrik, Konditsioner</title>
+    <meta name="description" content="Toshkentda ishonchli ta'mir ustalari: santexnik, elektrik, konditsioner, mebel, kompyuter ta'mirlash. Bir bosmda usta chaqiring — 15 daqiqada yetib keladi!" />
+    <meta name="keywords" content="toshkentda muzlatkich tamirlash, santexnik chaqirish, elektrik usta, konditsioner tamirlash, usta chaqirish toshkent, profix, ta'mirlash xizmati" />
+    <meta name="author" content="ProFix.uz" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://profix.uz" />
+
+    <!-- ══ OPEN GRAPH (Telegram, Facebook, VK) ══ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://profix.uz" />
+    <meta property="og:title" content="ProFix.uz — Bir bosmda usta chaqiring!" />
+    <meta property="og:description" content="Toshkentda 500+ tasdiqlangan usta. Santexnika, elektr, konditsioner, qurilish. 15 daqiqada yetib keladi!" />
+    <meta property="og:image" content="https://profix.uz/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="uz_UZ" />
+    <meta property="og:site_name" content="ProFix.uz" />
+
+    <!-- ══ TWITTER CARD ══ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ProFix.uz — Toshkentda ta'mir ustalari" />
+    <meta name="twitter:description" content="Bir bosmda usta chaqiring. 15 daqiqada yetib keladi!" />
+    <meta name="twitter:image" content="https://profix.uz/og-image.png" />
+
+    <!-- ══ PWA / Theme ══ -->
+    <meta name="theme-color" content="#7C6EFA" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ProFix" />
+
+    <!-- ══ Telegram Web App SDK ══ -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- ══ JSON-LD Structured Data ══ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "ProFix.uz",
+      "description": "Toshkentda ta'mir ustalari platformasi — santexnik, elektrik, konditsioner va boshqa xizmatlar",
+      "url": "https://profix.uz",
+      "telephone": "+998900000000",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Toshkent",
+        "addressCountry": "UZ"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "41.2995",
+        "longitude": "69.2401"
+      },
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "08:00",
+        "closes": "22:00"
+      },
+      "priceRange": "$$",
+      "serviceType": ["Santexnika", "Elektr ta'mirlash", "Konditsioner ta'mirlash", "Mebel yig'ish", "Tozalash xizmatlari"]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

@@ -13,6 +13,7 @@ import {
   ShieldCheck, Loader2
 } from 'lucide-react';
 import { formatPhone } from '../lib/utils';
+import ReferralSection from '../components/ReferralSection';
 
 
 export default function ProfilePage() {
@@ -267,6 +268,18 @@ export default function ProfilePage() {
             )}
           </div>
         </section>
+
+        {/* ── REFERRAL SECTION ── */}
+        {user && (
+          <section>
+            <ReferralSection
+              userId={user.id}
+              referralCode={(user as any).referralCode}
+              referredCount={(user as any).referredCount || 0}
+              bonusPercent={10}
+            />
+          </section>
+        )}
 
         {/* ── APP SETTINGS ── */}
         <section>

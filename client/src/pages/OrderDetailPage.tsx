@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { OrderStatus } from '../types';
 import toast from 'react-hot-toast';
+import ShareResultCard from '../components/ShareResultCard';
 
 const STATUS: Record<OrderStatus, { label: string; badge: string; icon: React.ReactNode; color: string }> = {
   PENDING:     { label: 'Kutilmoqda',      badge: 'badge-pending',     icon: <Hourglass size={20} />,    color: '#FBBF24' },
@@ -298,16 +299,28 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        {/* ── REVIEW CTA ── */}
-        {canReview && (
-          <div className="card" style={{ textAlign: 'center', padding: '32px 20px', background: 'var(--bg-glass)' }}>
-            <MessageSquare size={40} style={{ color: 'var(--secondary)', margin: '0 auto 16px' }} />
-            <h3 style={{ fontFamily: 'Poppins, sans-serif', fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Xizmatni baholang</h3>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 24 }}>Ushbu usta xizmatidan mamnunmisiz? Fikringizni qoldiring!</p>
-            <button className="btn btn-gradient" onClick={() => navigate(`/review/${order.id}`)} style={{ height: 52, borderRadius: 16 }}>
-              <Star size={18} fill="currentColor" /> Sharh qoldirish
-            </button>
-          </div>
+        {/* ── COMPLETED: Share Result + Review CTA ── */}
+        {order.status === 'COMPLETED' && isClient && (
+          <>
+            <ShareResultCard
+              specialistName={order.specialist?.user?.name || 'Usta'}
+              categoryName={order.category?.name || 'Xizmat'}
+              orderDate={new Date(order.updatedAt).toLocaleDateString('uz', { day: 'numeric', month: 'short' })}
+              rating={order.review?.rating}
+              onReview={canReview ? () => navigate(`/review/${order.id}`) : undefined}
+            />
+            {canReview && (
+              <div style={{ textAlign: 'center', padding: '20px 0 0' }}>
+                <button
+                  className="btn btn-gradient"
+                  onClick={() => navigate(`/review/${order.id}`)}
+                  style={{ height: 52, borderRadius: 16 }}
+                >
+                  <Star size={18} fill="currentColor" /> 🎁 Sharh qoldirish (bonus olish)
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* ── ACTIONS ── */}
