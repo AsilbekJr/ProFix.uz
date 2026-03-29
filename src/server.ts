@@ -48,11 +48,15 @@ const corsOptions = {
     if (!origin && isDev) return callback(null, true);
     // Dev muhitda barcha localhost portlariga ruxsat
     if (isDev && origin && /^http:\/\/localhost:\d+$/.test(origin)) return callback(null, true);
+    // Vercel domenlari uchun qo'shimcha ruxsat
+    if (origin && origin.includes('vercel.app')) return callback(null, true);
+    
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error(`CORS: "${origin}" domeniga ruxsat yo'q`));
   },
   credentials: true,
 };
+
 
 // ── Socket.io ─────────────────────────────────────────────────────────────────
 const io = new Server(httpServer, {
